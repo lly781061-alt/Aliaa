@@ -1,69 +1,20 @@
-import 'package:flutter/material.dart';
+name: my_app
+description: A new Flutter project.
+publish_to: 'none'
+version: 1.0.0+1
 
-void main() {
-  runApp(const MyApp());
-}
+environment:
+  sdk: ">=3.0.0 <4.0.0"
 
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'تطبيق مبيعات',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: const StoreHomePage(),
-    );
-  }
-}
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
 
-class StoreHomePage extends StatefulWidget {
-  const StoreHomePage({Key? key}) : super(key: key);
-
-  @override
-  _StoreHomePageState createState() => _StoreHomePageState();
-}
-
-class _StoreHomePageState extends State<StoreHomePage> {
-  final List> products = [
-    {'name': 'منتج 1', 'price': 100},
-    {'name': 'منتج 2', 'price': 250},
-    {'name': 'منتج 3', 'price': 500},
-  ];
-
-  final List> cart = [];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('متجر المبيعات'),
-        actions: [
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text(
-                'السلة: ${cart.length}',
-                style: const TextStyle(fontSize: 18),
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: ListView.builder(
-        itemCount: products.length,
-        itemBuilder: (context, index) {
-          final product = products[index];
-          return Card(
-            margin: const EdgeInsets.all(8.0),
-            child: ListTile(
-              title: Text(product['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('السعر: ${product['price']} د.ع'),
-              trailing: ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    cart.add(product);
-                  });
+flutter:
+  uses-material-design: true
