@@ -1,25 +1,46 @@
-name: Build Flutter APK
-
+name: Build APK
 on:
   push:
-    branches: [ "main" ]
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.x'
-          channel: 'stable'
-      - run: flutter create . --platforms=android
-      - run: sed -i 's/compileSdk = 33/compileSdk = 34/g' android/app/build.gradle.kts || true
-      - run: sed -i 's/compileSdkVersion 33/compileSdkVersion 34/g' android/app/build.gradle || true
+          channel: stable
+      - name: Generate Android project and keep our code
+        run: |
+          cp lib/main.dart /tmp/main.dart
+          cp lib/store.dart /tmp/store.dart
+          cp pubspec.yaml /tmp/pubspec.yaml
+          flutter create --platforms=android --project-name shop_pro .
+          cp /tmp/main.dart lib/main.dart
+          cp /tmp/store.dart lib/store.dart
+          cp /tmp/pubspec.yaml pubspec.yaml
+      - name: Set app name
+        run: sed -i 's/android:label="[^"]*"/android:label="مبيعات المحل"/' android/app/src/main/AndroidManifest.xml
+      - name: Force compileSdk 36 for all modules
+        run: |
+          mkdir -p ~/.gradle/init.d
+          cat > ~/.gradle/init.d/compilesdk.gradle <<'EOF'
+          allprojects {
+            afterEvaluate { p ->
+              def a = p.extensions.findByName('android')
+              if (a != null) { a.compileSdk = 36 }
+            }
+          }
+          EOF
       - run: flutter pub get
       - run: flutter build apk --release
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: release-apk
+          name: shop-pro-apk
           path: build/app/outputs/flutter-apk/app-release.apk
