@@ -2,31 +2,51 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:quick_actions/quick_actions.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'export.dart';
 import 'store.dart';
 
 const kInk = Color(0xFF1F2A30);
+final navKey = GlobalKey<NavigatorState>();
+bool _bannerHidden = false;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await store.init();
+  await store.autoBackupIfDue();
   runApp(const ShopApp());
 }
+
+// ---------------------------------------------------------------- theme
+double rad() => const [8.0, 14.0, 22.0][store.rad];
+Color opNew() => Color(kOpHex[store.newCol]); // new operation: new debt / new rental
+Color opRecv() => Color(kOpHex[store.recvCol]); // receipt: debt payment / rental return
+Color shadeHex(int v, double f) => Color.fromARGB(
+    255, (((v >> 16) & 255) * f).round(), (((v >> 8) & 255) * f).round(), ((v & 255) * f).round());
 
 ThemeData _theme(Brightness b) {
   final acc = Color(kAccHex[store.acc]);
   final onAcc = acc.computeLuminance() > 0.5 ? kInk : Colors.white;
+  final dark = b == Brightness.dark;
+  final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(rad()));
   return ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(seedColor: acc, brightness: b)
         .copyWith(primary: acc, onPrimary: onAcc),
+    scaffoldBackgroundColor: dark ? const Color(0xFF12171B) : const Color(0xFFF3F5F7),
     appBarTheme: const AppBarTheme(backgroundColor: kInk, foregroundColor: Colors.white),
-    navigationBarTheme: NavigationBarThemeData(indicatorColor: acc),
+    navigationBarTheme: NavigationBarThemeData(indicatorColor: acc.withAlpha(70)),
+    filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+            shape: shape, padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16))),
+    outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(shape: shape)),
   );
 }
 
@@ -36,6 +56,7 @@ class ShopApp extends StatelessWidget {
   Widget build(BuildContext context) => ListenableBuilder(
         listenable: store,
         builder: (_, __) => MaterialApp(
+          navigatorKey: navKey,
           title: 'نظام مبيعات المحل',
           debugShowCheckedModeBanner: false,
           locale: const Locale('ar'),
@@ -84,7 +105,7 @@ Future<bool> confirmDlg(BuildContext c, String t) async =>
 Widget tf(TextEditingController c, String l,
         {bool isNum = false, bool tel = false, int lines = 1, ValueChanged<String>? onChanged}) =>
     Padding(
-        padding: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.only(bottom: 10),
         child: TextField(
             controller: c,
             onChanged: onChanged,
@@ -94,15 +115,15 @@ Widget tf(TextEditingController c, String l,
                 : isNum
                     ? TextInputType.number
                     : TextInputType.text,
-            decoration: InputDecoration(labelText: l, border: const OutlineInputBorder())));
+            decoration: InputDecoration(
+                labelText: l,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(rad())))));
 
 const _bold = TextStyle(fontWeight: FontWeight.w800);
 
-Widget thumb(String img) => Padding(
-    padding: const EdgeInsetsDirectional.only(end: 4),
-    child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.memory(imgBytes(img), width: 46, height: 46, fit: BoxFit.cover, gaplessPlayback: true)));
+Widget thumb(String img, {double s = 46}) => ClipRRect(
+    borderRadius: BorderRadius.circular(10),
+    child: Image.memory(imgBytes(img), width: s, height: s, fit: BoxFit.cover, gaplessPlayback: true));
 
 void viewImg(BuildContext c, String img) => showDialog(
     context: c,
@@ -114,7 +135,7 @@ Widget imgView(BuildContext c, String img) => GestureDetector(
     child: Padding(
         padding: const EdgeInsets.only(top: 8),
         child: ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(rad()),
             child: Image.memory(imgBytes(img), height: 170, width: double.infinity, fit: BoxFit.contain))));
 
 Future<void> callPhone(String p) => launchUrl(Uri.parse('tel:$p'));
@@ -170,14 +191,108 @@ class _PhotoFieldState extends State<PhotoField> {
       ]);
 }
 
+/// Rounded card with soft shadow and an optional colored stripe on the start side.
+class Panel extends StatelessWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  final Color? stripe;
+  final EdgeInsets margin;
+  const Panel(
+      {super.key, required this.child, this.onTap, this.stripe, this.margin = const EdgeInsets.only(bottom: 10)});
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final r = BorderRadius.circular(rad());
+    return Padding(
+        padding: margin,
+        child: DecoratedBox(
+            decoration: BoxDecoration(
+                color: dark ? const Color(0xFF1C2328) : Colors.white,
+                borderRadius: r,
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withAlpha(dark ? 64 : 18),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3))
+                ]),
+            child: ClipRRect(
+                borderRadius: r,
+                child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                        onTap: onTap,
+                        child: IntrinsicHeight(
+                            child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                          if (stripe != null) Container(width: 5, color: stripe),
+                          Expanded(child: Padding(padding: const EdgeInsets.all(12), child: child)),
+                        ])))))));
+  }
+}
+
+Widget itemRow({Widget? lead, required String title, Widget? sub, Widget? trail}) => Row(children: [
+      if (lead != null) ...[lead, const SizedBox(width: 10)],
+      Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+        if (sub != null) sub,
+      ])),
+      if (trail != null) trail,
+    ]);
+
+Widget subText(String s, {Color? c}) =>
+    Text(s, style: TextStyle(fontSize: 12.5, color: c ?? Colors.grey.shade600));
+
+Widget secTitle(String t) => Padding(
+    padding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
+    child: Text(t, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)));
+
+Widget bigStat(IconData i, Color c, String t, String v) => Expanded(
+    child: Panel(
+        margin: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(color: c.withAlpha(36), shape: BoxShape.circle),
+              child: Icon(i, color: c, size: 20)),
+          const SizedBox(height: 8),
+          Text(t, style: const TextStyle(fontSize: 12)),
+          Text(v, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+        ])));
+
+Widget prodAvatar(Product p) {
+  if (p.img.isNotEmpty) return thumb(p.img);
+  final c = p.cat == kCats[0]
+      ? const Color(0xFFF2A900)
+      : p.cat == kCats[1]
+          ? const Color(0xFFE8590C)
+          : const Color(0xFF868E96);
+  final ic = p.cat == kCats[0] ? Icons.bolt : p.cat == kCats[1] ? Icons.foundation : Icons.category;
+  return Container(
+      width: 46,
+      height: 46,
+      decoration: BoxDecoration(color: c.withAlpha(40), borderRadius: BorderRadius.circular(10)),
+      child: Icon(ic, color: c));
+}
+
+Widget qtyText(Product p) => subText(
+    p.qty <= 0 ? 'نفدت الكمية' : 'المتوفر: ${p.qty}${p.qty <= store.low ? ' (منخفض)' : ''}',
+    c: p.qty <= 0
+        ? Colors.red
+        : p.qty <= store.low
+            ? Colors.orange.shade800
+            : Colors.green.shade700);
+
 void showInvoice(BuildContext c, Sale s) => showDialog(
     context: c,
     builder: (ctx) => AlertDialog(
-          content: SingleChildScrollView(child: SelectableText(s.text(store.shop))),
-          actions: [
-            TextButton(onPressed: () => Share.share(s.text(store.shop)), child: const Text('مشاركة')),
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إغلاق')),
-          ],
+          title: Text('${s.kind == 'rent' ? 'إيجار' : 'فاتورة'} ${s.no}'),
+          content: SingleChildScrollView(
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            SelectableText(s.text()),
+            const SizedBox(height: 12),
+            shareRow(ctx, () => saleDoc(s)),
+          ])),
+          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إغلاق'))],
         ));
 
 List<Product> filtered(String cat, String q) => store.prods
@@ -193,10 +308,10 @@ class Filters extends StatelessWidget {
   Widget build(BuildContext context) => Column(children: [
         TextField(
             onChanged: onQ,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
                 hintText: 'ابحث عن صنف',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder())),
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(rad())))),
         const SizedBox(height: 6),
         SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -209,54 +324,183 @@ class Filters extends StatelessWidget {
       ]);
 }
 
-Widget stat(String t, String v, {Color? c}) => Expanded(
-    child: Card(
-        child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(t, style: const TextStyle(fontSize: 12)),
-              Text(v, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: c)),
-            ]))));
+// ---------------------------------------------------------------- backup helpers
+Future<void> backupToDrive(BuildContext c) async {
+  try {
+    final dir = await getTemporaryDirectory();
+    final f = File('${dir.path}/shop-backup-${DateFormat('yyyy-MM-dd').format(DateTime.now())}.json');
+    await f.writeAsString(store.exportJson());
+    store.markDrive();
+    await Share.shareXFiles([XFile(f.path)], text: 'نسخة احتياطية - ${store.shop}');
+  } catch (_) {
+    if (c.mounted) toast(c, 'تعذر إنشاء النسخة');
+  }
+}
+
+Future<void> restoreFromFile(BuildContext c) async {
+  final r = await FilePicker.platform.pickFiles();
+  if (r == null || r.files.single.path == null) return;
+  try {
+    final s = await File(r.files.single.path!).readAsString();
+    jsonDecode(s);
+    if (!c.mounted) return;
+    if (!await confirmDlg(c, 'ستُستبدل بيانات الجهاز الحالية بالنسخة. متابعة؟')) return;
+    store.importJson(s);
+    if (c.mounted) toast(c, 'تمت الاستعادة');
+  } catch (_) {
+    if (c.mounted) toast(c, 'الملف غير صالح');
+  }
+}
 
 // ---------------------------------------------------------------- home
+class _Tab {
+  final String label;
+  final IconData icon;
+  final Widget Function() page;
+  _Tab(this.label, this.icon, this.page);
+}
+
 class Home extends StatefulWidget {
   const Home({super.key});
   @override
   State<Home> createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> {
+class _HomeState extends State<Home> with WidgetsBindingObserver {
   int tab = 0;
+  String _sig = '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    store.addListener(_shortcuts);
+    _shortcuts();
+    QuickActions().initialize(_onQuick);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    store.removeListener(_shortcuts);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState s) {
+    if (s == AppLifecycleState.resumed) store.autoBackupIfDue();
+  }
+
+  void _shortcuts() {
+    final items = <ShortcutItem>[
+      if (store.qDebt) ShortcutItem(type: 'debt', localizedTitle: 'تسجيل دين'),
+      if (store.qRent) ShortcutItem(type: 'rent', localizedTitle: 'إيجار جديد'),
+      if (store.qStock) ShortcutItem(type: 'stock', localizedTitle: 'إضافة صنف'),
+      if (store.qSell) ShortcutItem(type: 'sell', localizedTitle: 'بيع جديد'),
+    ];
+    final sig = items.map((e) => e.type).join(',');
+    if (sig == _sig) return;
+    _sig = sig;
+    try {
+      QuickActions().setShortcutItems(items).catchError((_) {});
+    } catch (_) {}
+  }
+
+  void _onQuick(String t) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final c = navKey.currentContext;
+      if (c == null) return;
+      if (t == 'debt') {
+        newDebt(c);
+      } else if (t == 'rent') {
+        newRental(c);
+      } else if (t == 'stock') {
+        editProduct(c);
+      } else if (t == 'sell') {
+        setState(() => tab = 0);
+      }
+    });
+  }
+
+  Widget _qtile(IconData i, String l, Color c, VoidCallback f) => Expanded(
+      child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Material(
+              color: c.withAlpha(30),
+              borderRadius: BorderRadius.circular(rad()),
+              child: InkWell(
+                  borderRadius: BorderRadius.circular(rad()),
+                  onTap: f,
+                  child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 9),
+                      child: Column(children: [
+                        Icon(i, color: c),
+                        const SizedBox(height: 3),
+                        Text(l, style: TextStyle(color: c, fontWeight: FontWeight.w700, fontSize: 12)),
+                      ]))))));
+
   @override
   Widget build(BuildContext context) => Live((_) {
-    final pages = <Widget>[SellPage(), StockPage(), DebtPage(), RentPage(), ReportPage()];
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(store.shop, style: _bold),
-        actions: [
-          IconButton(
-              icon: const Icon(Icons.settings),
-              onPressed: () =>
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage()))),
-        ],
-        bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(4),
-            child: Container(height: 4, color: Color(kAccHex[store.acc]))),
-      ),
-      body: pages[tab],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: tab,
-        onDestinationSelected: (i) => setState(() => tab = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.point_of_sale), label: 'بيع'),
-          NavigationDestination(icon: Icon(Icons.inventory_2), label: 'المخزون'),
-          NavigationDestination(icon: Icon(Icons.account_balance_wallet), label: 'الديون'),
-          NavigationDestination(icon: Icon(Icons.construction), label: 'الإيجار'),
-          NavigationDestination(icon: Icon(Icons.bar_chart), label: 'التقارير'),
-        ],
-      ),
-    );
-  });
+        final tabs = <_Tab>[
+          _Tab('بيع', Icons.point_of_sale, () => SellPage()),
+          if (store.showStock) _Tab('المخزون', Icons.inventory_2, () => StockPage()),
+          if (store.showDebt) _Tab('الديون', Icons.account_balance_wallet, () => DebtPage()),
+          if (store.showRent) _Tab('الإيجار', Icons.construction, () => RentPage()),
+          _Tab('التقارير', Icons.bar_chart, () => ReportPage()),
+        ];
+        if (tab >= tabs.length) tab = 0;
+        final qs = <Widget>[
+          if (store.qDebt) _qtile(Icons.person_add_alt_1, 'دين جديد', opNew(), () => newDebt(context)),
+          if (store.qRent) _qtile(Icons.add_business, 'إيجار جديد', opNew(), () => newRental(context)),
+          if (store.qStock) _qtile(Icons.add_box, 'إضافة صنف', const Color(0xFF2F9E44), () => editProduct(context)),
+        ];
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(store.shop, style: _bold),
+            backgroundColor: Colors.transparent,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            systemOverlayStyle: SystemUiOverlayStyle.light,
+            flexibleSpace: Container(
+                decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                        begin: Alignment.centerRight,
+                        end: Alignment.centerLeft,
+                        colors: [shadeHex(kAccHex[store.acc], .5), shadeHex(kAccHex[store.acc], .86)]))),
+            actions: [
+              IconButton(
+                  icon: const Icon(Icons.settings),
+                  onPressed: () =>
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage()))),
+            ],
+          ),
+          body: Column(children: [
+            if (store.driveDue && !_bannerHidden)
+              Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+                  child: Panel(
+                      margin: EdgeInsets.zero,
+                      stripe: Colors.orange,
+                      child: Row(children: [
+                        const Icon(Icons.cloud_upload, color: Colors.orange),
+                        const SizedBox(width: 8),
+                        const Expanded(child: Text('حان وقت النسخ الاحتياطي على Drive', style: _bold)),
+                        TextButton(onPressed: () => backupToDrive(context), child: const Text('نسخ الآن')),
+                        IconButton(
+                            icon: const Icon(Icons.close, size: 18),
+                            onPressed: () => setState(() => _bannerHidden = true)),
+                      ]))),
+            if (store.showQuick && qs.isNotEmpty)
+              Padding(padding: const EdgeInsets.fromLTRB(8, 10, 8, 0), child: Row(children: qs)),
+            Expanded(child: tabs[tab].page()),
+          ]),
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: tab,
+            onDestinationSelected: (i) => setState(() => tab = i),
+            destinations: [for (final t in tabs) NavigationDestination(icon: Icon(t.icon), label: t.label)],
+          ),
+        );
+      });
 }
 
 // ---------------------------------------------------------------- sell
@@ -278,18 +522,16 @@ class _SellPageState extends State<SellPage> {
       Expanded(
           child: ListView(padding: const EdgeInsets.symmetric(horizontal: 12), children: [
         for (final p in l)
-          Card(
-              child: ListTile(
-            leading: p.img.isEmpty ? null : thumb(p.img),
-            title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-            subtitle: Text('المتوفر: ${p.qty}',
-                style: TextStyle(color: p.qty <= store.low ? Colors.red : null)),
-            trailing: Text(fm(p.price), style: _bold),
-            onTap: () {
-              final e = store.addToCart(p);
-              if (e != null) toast(context, e);
-            },
-          )),
+          Panel(
+              onTap: () {
+                final e = store.addToCart(p);
+                if (e != null) toast(context, e);
+              },
+              child: itemRow(
+                  lead: prodAvatar(p),
+                  title: p.name,
+                  sub: qtyText(p),
+                  trail: Text(fm(p.price), style: _bold))),
       ])),
       if (store.cart.isNotEmpty)
         SafeArea(
@@ -297,10 +539,10 @@ class _SellPageState extends State<SellPage> {
                 padding: const EdgeInsets.all(12),
                 child: SizedBox(
                     width: double.infinity,
-                    child: FilledButton(
-                        style: FilledButton.styleFrom(padding: const EdgeInsets.all(14)),
+                    child: FilledButton.icon(
                         onPressed: () => openCart(context),
-                        child: Text('الفاتورة (${store.cart.length}) · ${fm(store.net)}', style: _bold))))),
+                        icon: const Icon(Icons.shopping_cart_checkout),
+                        label: Text('الفاتورة (${store.cart.length}) · ${fm(store.net)}', style: _bold))))),
     ]);
   }
 }
@@ -346,7 +588,7 @@ void openCart(BuildContext context) {
                           }),
                     ]),
                   ),
-                tf(discC, 'خصم (د.ع)', isNum: true, onChanged: (v) {
+                tf(discC, 'خصم (${store.cur})', isNum: true, onChanged: (v) {
                   store.disc = double.tryParse(v) ?? 0;
                   store.touch();
                 }),
@@ -361,7 +603,7 @@ void openCart(BuildContext context) {
                     store.touch();
                   },
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 tf(custC, store.credit ? 'اسم العميل' : 'اسم العميل (اختياري)', onChanged: (v) {
                   store.cust = v;
                   store.touch();
@@ -391,7 +633,6 @@ void openCart(BuildContext context) {
                 SizedBox(
                     width: double.infinity,
                     child: FilledButton(
-                        style: FilledButton.styleFrom(padding: const EdgeInsets.all(14)),
                         onPressed: () {
                           final e = store.checkout();
                           if (e != null) {
@@ -400,7 +641,7 @@ void openCart(BuildContext context) {
                           }
                           closed = true;
                           Navigator.pop(ctx);
-                          showInvoice(context, store.lastSale!);
+                          if (store.autoInvoice) showInvoice(context, store.lastSale!);
                         },
                         child: const Text('إتمام البيع', style: _bold))),
               ])),
@@ -421,6 +662,7 @@ class _StockPageState extends State<StockPage> {
   Widget build(BuildContext context) {
     final l = filtered(cat, q);
     return Scaffold(
+      backgroundColor: Colors.transparent,
       floatingActionButton: FloatingActionButton.extended(
           onPressed: () => editProduct(context),
           icon: const Icon(Icons.add),
@@ -432,15 +674,13 @@ class _StockPageState extends State<StockPage> {
         Expanded(
             child: ListView(padding: const EdgeInsets.fromLTRB(12, 0, 12, 80), children: [
           for (final p in l)
-            Card(
-                child: ListTile(
-              leading: p.img.isEmpty ? null : thumb(p.img),
-              title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: Text('${p.cat} · الكمية: ${p.qty}${p.qty <= store.low ? ' (منخفض)' : ''}',
-                  style: TextStyle(color: p.qty <= store.low ? Colors.red : null)),
-              trailing: Text(fm(p.price), style: _bold),
-              onTap: () => editProduct(context, p),
-            )),
+            Panel(
+                onTap: () => editProduct(context, p),
+                child: itemRow(
+                    lead: prodAvatar(p),
+                    title: p.name,
+                    sub: Row(children: [subText('${p.cat} · '), qtyText(p)]),
+                    trail: Text(fm(p.price), style: _bold))),
         ])),
       ]),
     );
@@ -463,7 +703,7 @@ Future<void> editProduct(BuildContext c, [Product? p]) async {
                     child: Column(mainAxisSize: MainAxisSize.min, children: [
                   tf(n, 'الاسم'),
                   Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.only(bottom: 10),
                       child: DropdownButtonFormField<String>(
                           value: cat,
                           decoration: const InputDecoration(labelText: 'القسم', border: OutlineInputBorder()),
@@ -518,22 +758,42 @@ class DebtPage extends StatelessWidget {
       ..sort((a, b) => store.bal(b).compareTo(store.bal(a)));
     final sum = ns.fold(0.0, (a, n) => a + store.bal(n));
     return ListView(padding: const EdgeInsets.all(12), children: [
-      Row(children: [stat('إجمالي الديون', fm(sum), c: Colors.red), stat('عدد المدينين', '${ns.length}')]),
+      Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(rad()),
+              gradient: LinearGradient(colors: [shadeHex(kOpHex[store.newCol], .6), opNew()])),
+          child: Row(children: [
+            const Icon(Icons.account_balance_wallet, color: Colors.white, size: 34),
+            const SizedBox(width: 12),
+            Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('إجمالي الديون المستحقة', style: TextStyle(color: Colors.white70)),
+              Text(fm(sum), style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800)),
+            ])),
+            Text('${ns.length}\nمدين',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+          ])),
+      const SizedBox(height: 12),
       FilledButton.icon(
+          style: FilledButton.styleFrom(backgroundColor: opNew(), foregroundColor: Colors.white),
           onPressed: () => newDebt(context),
           icon: const Icon(Icons.add),
           label: const Text('تسجيل دين جديد')),
-      const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('المدينون', style: _bold)),
+      secTitle('المدينون'),
       if (ns.isEmpty) const Center(child: Padding(padding: EdgeInsets.all(20), child: Text('لا توجد ديون مستحقة'))),
       for (final n in ns)
-        Card(
-            child: ListTile(
-          leading: store.imgOf(n).isEmpty ? const CircleAvatar(child: Icon(Icons.person)) : thumb(store.imgOf(n)),
-          title: Text(n, style: const TextStyle(fontWeight: FontWeight.w600)),
-          subtitle: Text(store.phoneOf(n).isEmpty ? 'آخر حركة: ${fd(store.debts[n]!.last.d)}' : store.phoneOf(n)),
-          trailing: Text(fm(store.bal(n)), style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w800)),
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DebtDetail(n))),
-        )),
+        Panel(
+            stripe: opNew(),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DebtDetail(n))),
+            child: itemRow(
+                lead: store.imgOf(n).isEmpty
+                    ? CircleAvatar(backgroundColor: opNew().withAlpha(40), child: Icon(Icons.person, color: opNew()))
+                    : thumb(store.imgOf(n)),
+                title: n,
+                sub: subText(store.phoneOf(n).isEmpty ? 'آخر حركة: ${fd(store.debts[n]!.last.d)}' : store.phoneOf(n)),
+                trail: Text(fm(store.bal(n)), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)))),
     ]);
   }
 }
@@ -560,6 +820,7 @@ Future<void> newDebt(BuildContext c) async {
             actions: [
               TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
               FilledButton(
+                  style: FilledButton.styleFrom(backgroundColor: opNew(), foregroundColor: Colors.white),
                   onPressed: () {
                     final name = n.text.trim(), amt = double.tryParse(a.text) ?? 0;
                     if (name.isEmpty || amt <= 0) {
@@ -571,7 +832,7 @@ Future<void> newDebt(BuildContext c) async {
                     store.save();
                     Navigator.pop(ctx);
                   },
-                  child: const Text('حفظ')),
+                  child: const Text('تسجيل الدين')),
             ],
           ));
 }
@@ -629,15 +890,6 @@ class _DebtDetailState extends State<DebtDetail> {
     nt.clear();
   }
 
-  String statement() {
-    final b = StringBuffer('${store.shop}\nكشف حساب: ${widget.name}\n------------------\n');
-    for (final e in store.debts[widget.name] ?? <LEntry>[]) {
-      b.writeln('${fd(e.d)} | ${e.t == 'debt' ? 'دين +' : 'تسديد −'}${fm(e.amt)}${e.note.isEmpty ? '' : ' | ${e.note}'}');
-    }
-    b.write('------------------\nالمتبقي: ${fm(store.bal(widget.name))}');
-    return b.toString();
-  }
-
   @override
   Widget build(BuildContext context) {
     final n = widget.name;
@@ -648,49 +900,57 @@ class _DebtDetailState extends State<DebtDetail> {
         final l = (store.debts[n] ?? <LEntry>[]).reversed.toList();
         final bal = store.bal(n);
         return ListView(padding: const EdgeInsets.all(12), children: [
-          Card(
-              child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(children: [
-                      const Icon(Icons.phone, size: 18),
-                      const SizedBox(width: 6),
-                      Expanded(child: Text(ph.isEmpty ? 'لا يوجد رقم هاتف' : ph, style: _bold)),
-                      if (ph.isNotEmpty)
-                        IconButton(icon: const Icon(Icons.call), onPressed: () => callPhone(ph)),
-                    ]),
-                    if (img.isNotEmpty) imgView(context, img),
-                    TextButton.icon(
-                        onPressed: () => editCust(context, n),
-                        icon: const Icon(Icons.edit),
-                        label: const Text('تعديل الهاتف والصورة')),
-                  ]))),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Panel(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              const Icon(Icons.phone, size: 18),
+              const SizedBox(width: 6),
+              Expanded(child: Text(ph.isEmpty ? 'لا يوجد رقم هاتف' : ph, style: _bold)),
+              if (ph.isNotEmpty) IconButton(icon: const Icon(Icons.call), onPressed: () => callPhone(ph)),
+            ]),
+            if (img.isNotEmpty) imgView(context, img),
+            TextButton.icon(
+                onPressed: () => editCust(context, n),
+                icon: const Icon(Icons.edit),
+                label: const Text('تعديل الهاتف والصورة')),
+          ])),
+          Panel(
+              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             const Text('المتبقي', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
             Text(fm(bal),
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: bal > 0 ? Colors.red : Colors.green)),
-          ]),
-          const SizedBox(height: 8),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: bal > 0 ? Colors.orange.shade800 : Colors.green)),
+          ])),
           tf(a, 'المبلغ', isNum: true),
           tf(nt, 'ملاحظة'),
           Row(children: [
-            Expanded(child: FilledButton(onPressed: () => act('pay'), child: const Text('تسديد'))),
+            Expanded(
+                child: FilledButton.icon(
+                    style: FilledButton.styleFrom(backgroundColor: opRecv(), foregroundColor: Colors.white),
+                    onPressed: () => act('pay'),
+                    icon: const Icon(Icons.call_received),
+                    label: const Text('استلام دفعة'))),
             const SizedBox(width: 8),
-            Expanded(child: OutlinedButton(onPressed: () => act('debt'), child: const Text('إضافة دين'))),
+            Expanded(
+                child: FilledButton.icon(
+                    style: FilledButton.styleFrom(backgroundColor: opNew(), foregroundColor: Colors.white),
+                    onPressed: () => act('debt'),
+                    icon: const Icon(Icons.add),
+                    label: const Text('دين جديد'))),
           ]),
-          OutlinedButton.icon(
-              onPressed: () => Share.share(statement()),
-              icon: const Icon(Icons.share),
-              label: const Text('مشاركة كشف الحساب')),
-          const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('الحركات', style: _bold)),
+          secTitle('مشاركة كشف الحساب مع العميل'),
+          shareRow(context, () => debtDoc(n)),
+          secTitle('الحركات'),
           for (final e in l)
-            Card(
-                child: ListTile(
-              title: Text('${e.t == 'debt' ? 'دين' : 'تسديد'}${e.note.isEmpty ? '' : ' · ${e.note}'}'),
-              subtitle: Text(fd(e.d)),
-              trailing: Text('${e.t == 'debt' ? '+' : '−'}${fm(e.amt)}',
-                  style: TextStyle(fontWeight: FontWeight.w800, color: e.t == 'debt' ? Colors.red : Colors.green)),
-            )),
+            Panel(
+                stripe: e.t == 'debt' ? opNew() : opRecv(),
+                child: itemRow(
+                    lead: Icon(e.t == 'debt' ? Icons.north_east : Icons.south_west,
+                        color: e.t == 'debt' ? opNew() : opRecv()),
+                    title: '${e.t == 'debt' ? 'دين جديد' : 'استلام دفعة'}${e.note.isEmpty ? '' : ' · ${e.note}'}',
+                    sub: subText(fd(e.d)),
+                    trail: Text('${e.t == 'debt' ? '+' : '−'}${fm(e.amt)}',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w800, color: e.t == 'debt' ? opNew() : opRecv())))),
         ]);
       }),
     );
@@ -719,50 +979,58 @@ class _RentPageState extends State<RentPage> {
       Row(children: [
         Expanded(
             child: FilledButton.icon(
-                onPressed: () => newRental(context), icon: const Icon(Icons.add), label: const Text('إيجار جديد'))),
+                style: FilledButton.styleFrom(backgroundColor: opNew(), foregroundColor: Colors.white),
+                onPressed: () => newRental(context),
+                icon: const Icon(Icons.add),
+                label: const Text('إيجار جديد'))),
         const SizedBox(width: 8),
         Expanded(
-            child: OutlinedButton(
+            child: OutlinedButton.icon(
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EquipPage())),
-                child: const Text('إدارة المعدات'))),
+                icon: const Icon(Icons.build),
+                label: const Text('إدارة المعدات'))),
       ]),
-      Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text('قيد الإيجار (${act.length})', style: _bold)),
+      secTitle('قيد الإيجار (${act.length})'),
       if (act.isEmpty) const Center(child: Padding(padding: EdgeInsets.all(16), child: Text('لا توجد معدات مؤجّرة حاليًا'))),
       for (final x in act)
-        Card(
-            child: ListTile(
-          title: Text('${x.name} × ${x.qty}', style: const TextStyle(fontWeight: FontWeight.w600)),
-          subtitle: Text('${x.cust}${x.phone.isEmpty ? '' : ' · ${x.phone}'} · منذ ${fd(x.start)} · ${x.daysNow()} يوم'),
-          trailing: Text(fm(x.daysNow() * x.rate * x.qty), style: _bold),
-          onTap: () => returnDialog(context, x),
-        )),
-      const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('المعدات المتاحة', style: _bold)),
+        Panel(
+            stripe: opNew(),
+            onTap: () => returnDialog(context, x),
+            child: itemRow(
+                title: '${x.name} × ${x.qty}',
+                sub: subText('${x.cust}${x.phone.isEmpty ? '' : ' · ${x.phone}'} · منذ ${fd(x.start)} · ${x.daysNow()} يوم'),
+                trail: Text(fm(x.daysNow() * x.rate * x.qty),
+                    style: TextStyle(fontWeight: FontWeight.w800, color: opNew())))),
+      secTitle('المعدات المتاحة'),
       for (final r in store.ritems)
-        Card(
-            child: ListTile(
-          title: Text(r.name),
-          subtitle: Text('${fm(r.rate)} / يوم'),
-          trailing: Text('متاح ${store.avail(r)} من ${r.qty}',
-              style: TextStyle(fontWeight: FontWeight.w600, color: store.avail(r) > 0 ? Colors.green : Colors.red)),
-        )),
-      const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('سجل الإيجارات المنتهية', style: _bold)),
+        Panel(
+            child: itemRow(
+                title: r.name,
+                sub: subText('${fm(r.rate)} / يوم'),
+                trail: Text('متاح ${store.avail(r)} من ${r.qty}',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: store.avail(r) > 0 ? Colors.green.shade700 : Colors.red)))),
+      secTitle('سجل الإيجارات المنتهية'),
       TextField(
           onChanged: (v) => setState(() => q = v),
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
               hintText: 'ابحث باسم العميل أو رقم الهاتف',
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder())),
+              prefixIcon: const Icon(Icons.search),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(rad())))),
       const SizedBox(height: 8),
       if (hist.isEmpty)
         Center(child: Padding(padding: const EdgeInsets.all(16), child: Text(all.isEmpty ? 'لا يوجد سجل بعد' : 'لا توجد نتائج'))),
       for (final x in hist)
-        Card(
-            child: ListTile(
-          title: Text('${x.cust} · ${x.name} × ${x.qty}'),
-          subtitle: Text('${fd(x.start)} ← ${fd(x.ret!)}${x.phone.isEmpty ? '' : ' · ${x.phone}'}'),
-          trailing: Text(fm(x.total > 0 ? x.total : x.daysNow() * x.rate * x.qty), style: _bold),
-          onTap: () => histDialog(context, x),
-        )),
+        Panel(
+            stripe: opRecv(),
+            onTap: () => histDialog(context, x),
+            child: itemRow(
+                lead: Icon(Icons.south_west, color: opRecv()),
+                title: '${x.cust} · ${x.name} × ${x.qty}',
+                sub: subText('${fd(x.start)} ← ${fd(x.ret!)}${x.phone.isEmpty ? '' : ' · ${x.phone}'}'),
+                trail: Text(fm(x.total > 0 ? x.total : x.daysNow() * x.rate * x.qty),
+                    style: TextStyle(fontWeight: FontWeight.w800, color: opRecv())))),
     ]);
   }
 }
@@ -790,7 +1058,7 @@ Future<void> newRental(BuildContext c) async {
                           .map((r) => DropdownMenuItem(value: r.id, child: Text('${r.name} (متاح ${store.avail(r)})')))
                           .toList(),
                       onChanged: (v) => set(() => it = store.ritems.firstWhere((r) => r.id == v))),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   tf(q, 'العدد', isNum: true),
                   tf(cu, 'اسم المستأجر', onChanged: (v) {
                     final p = store.phoneOf(v.trim());
@@ -803,6 +1071,7 @@ Future<void> newRental(BuildContext c) async {
                 actions: [
                   TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
                   FilledButton(
+                      style: FilledButton.styleFrom(backgroundColor: opNew(), foregroundColor: Colors.white),
                       onPressed: () {
                         final e = store.addRental(
                             it, int.tryParse(q.text) ?? 0, cu.text.trim(), ph.text.trim(), nt.text.trim(), img);
@@ -833,23 +1102,29 @@ void returnDialog(BuildContext c, Rental r) {
               if (img.isNotEmpty) imgView(ctx, img),
               const Divider(),
               Text('المستحق: ${fm(t)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 10),
+              const Text('مشاركة كشف مبدئي مع المستأجر:'),
+              const SizedBox(height: 6),
+              shareRow(ctx, () => rentalDoc([r], r.cust)),
             ])),
             actions: [
               TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إغلاق')),
               OutlinedButton(
+                  style: OutlinedButton.styleFrom(foregroundColor: opRecv(), side: BorderSide(color: opRecv())),
                   onPressed: () {
                     final s = store.returnRental(r, false);
                     Navigator.pop(ctx);
                     showInvoice(c, s);
                   },
-                  child: const Text('على الحساب (دين)')),
+                  child: const Text('استلام على الحساب')),
               FilledButton(
+                  style: FilledButton.styleFrom(backgroundColor: opRecv(), foregroundColor: Colors.white),
                   onPressed: () {
                     final s = store.returnRental(r, true);
                     Navigator.pop(ctx);
                     showInvoice(c, s);
                   },
-                  child: const Text('تحصيل نقدًا')),
+                  child: const Text('استلام وتحصيل نقدًا')),
             ],
           ));
 }
@@ -877,6 +1152,14 @@ void histDialog(BuildContext c, Rental x) {
               const Divider(),
               Text('المبلغ: ${fm(x.total > 0 ? x.total : x.daysNow() * x.rate * x.qty)}',
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 10),
+              const Text('مشاركة هذا الإيجار:'),
+              const SizedBox(height: 6),
+              shareRow(ctx, () => rentalDoc([x], x.cust)),
+              const SizedBox(height: 10),
+              const Text('مشاركة كل إيجارات العميل:'),
+              const SizedBox(height: 6),
+              shareRow(ctx, () => rentalDoc(store.rentals.where((r) => r.cust == x.cust).toList(), x.cust)),
             ])),
             actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إغلاق'))],
           ));
@@ -891,13 +1174,12 @@ class EquipPage extends StatelessWidget {
             onPressed: () => editEquip(context), icon: const Icon(Icons.add), label: const Text('إضافة معدة')),
         body: Live((_) => ListView(padding: const EdgeInsets.all(12), children: [
               for (final r in store.ritems)
-                Card(
-                    child: ListTile(
-                  title: Text(r.name),
-                  subtitle: Text('${fm(r.rate)} / يوم'),
-                  trailing: Text('العدد: ${r.qty}', style: _bold),
-                  onTap: () => editEquip(context, r),
-                )),
+                Panel(
+                    onTap: () => editEquip(context, r),
+                    child: itemRow(
+                        title: r.name,
+                        sub: subText('${fm(r.rate)} / يوم'),
+                        trail: Text('العدد: ${r.qty}', style: _bold))),
             ])),
       );
 }
@@ -956,9 +1238,9 @@ class ReportPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    bool isToday(int ms) {
-      final d = DateTime.fromMillisecondsSinceEpoch(ms);
-      return d.year == now.year && d.month == now.month && d.day == now.day;
+    bool sameDay(int ms, DateTime d) {
+      final x = DateTime.fromMillisecondsSinceEpoch(ms);
+      return x.year == d.year && x.month == d.month && x.day == d.day;
     }
 
     bool isMonth(int ms) {
@@ -967,7 +1249,7 @@ class ReportPage extends StatelessWidget {
     }
 
     double sum(Iterable<Sale> l) => l.fold(0.0, (a, s) => a + s.total);
-    final ts = store.sales.where((s) => isToday(s.date)).toList();
+    final ts = store.sales.where((s) => sameDay(s.date, now)).toList();
     final mo = store.sales.where((s) => isMonth(s.date));
     final profit = store.sales.fold(0.0, (a, s) {
       final g = s.items.fold(
@@ -977,145 +1259,282 @@ class ReportPage extends StatelessWidget {
     final dsum = store.debts.keys.fold(0.0, (a, n) => a + (store.bal(n) > 0 ? store.bal(n) : 0));
     final low = store.prods.where((p) => p.qty <= store.low).length;
     final recent = store.sales.reversed.take(30).toList();
-    return ListView(padding: const EdgeInsets.all(12), children: [
-      Row(children: [stat('مبيعات اليوم', fm(sum(ts))), stat('فواتير اليوم', '${ts.length}')]),
-      Row(children: [stat('مبيعات الشهر', fm(sum(mo))), stat('إجمالي الأرباح', fm(profit), c: Colors.green)]),
+    final days = List.generate(7, (i) => DateTime(now.year, now.month, now.day).subtract(Duration(days: 6 - i)));
+    final vals = days.map((d) => sum(store.sales.where((s) => sameDay(s.date, d)))).toList();
+    final mx = vals.fold<double>(1, (a, b) => b > a ? b : a);
+    final acc = Color(kAccHex[store.acc]);
+    return ListView(padding: const EdgeInsets.all(8), children: [
       Row(children: [
-        stat('الديون المستحقة', fm(dsum), c: Colors.red),
-        stat('أصناف منخفضة', '$low', c: low > 0 ? Colors.red : null)
+        bigStat(Icons.today, acc, 'مبيعات اليوم', fm(sum(ts))),
+        bigStat(Icons.receipt_long, Colors.indigo, 'فواتير اليوم', '${ts.length}'),
       ]),
-      const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('آخر الفواتير', style: _bold)),
+      Row(children: [
+        bigStat(Icons.calendar_month, Colors.teal, 'مبيعات الشهر', fm(sum(mo))),
+        bigStat(Icons.trending_up, Colors.green, 'إجمالي الأرباح', fm(profit)),
+      ]),
+      Row(children: [
+        bigStat(Icons.account_balance_wallet, opNew(), 'الديون المستحقة', fm(dsum)),
+        bigStat(Icons.warning_amber, low > 0 ? Colors.orange : Colors.grey, 'أصناف منخفضة', '$low'),
+      ]),
+      Padding(
+          padding: const EdgeInsets.fromLTRB(4, 0, 4, 0),
+          child: Panel(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('مبيعات آخر 7 أيام', style: _bold),
+                const SizedBox(height: 10),
+                SizedBox(
+                    height: 130,
+                    child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                      for (var i = 0; i < 7; i++)
+                        Expanded(
+                            child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
+                          Container(
+                              height: 4 + 90 * vals[i] / mx,
+                              margin: const EdgeInsets.symmetric(horizontal: 5),
+                              decoration: BoxDecoration(
+                                  color: i == 6 ? acc : acc.withAlpha(110), borderRadius: BorderRadius.circular(6))),
+                          const SizedBox(height: 4),
+                          Text(DateFormat('d/M').format(days[i]), style: const TextStyle(fontSize: 10)),
+                        ])),
+                    ])),
+              ]))),
+      Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: secTitle('آخر الفواتير')),
       if (recent.isEmpty) const Center(child: Padding(padding: EdgeInsets.all(16), child: Text('لا توجد فواتير بعد'))),
       for (final s in recent)
-        Card(
-            child: ListTile(
-          title: Text('${s.kind == 'rent' ? 'إيجار' : 'فاتورة'} ${s.no}${s.cust.isEmpty ? '' : ' · ${s.cust}'}'),
-          subtitle: Text(fd(s.date) + (s.total > s.paid ? ' · آجل' : '')),
-          trailing: Text(fm(s.total), style: _bold),
-          onTap: () => showInvoice(context, s),
-        )),
+        Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Panel(
+                stripe: s.kind == 'rent' ? opRecv() : acc,
+                onTap: () => showInvoice(context, s),
+                child: itemRow(
+                    title: '${s.kind == 'rent' ? 'إيجار' : 'فاتورة'} ${s.no}${s.cust.isEmpty ? '' : ' · ${s.cust}'}',
+                    sub: subText(fd(s.date) + (s.total > s.paid ? ' · آجل' : '')),
+                    trail: Text(fm(s.total), style: _bold)))),
     ]);
   }
 }
 
 // ---------------------------------------------------------------- settings
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
 
-  Future<void> backup(BuildContext c) async {
-    final dir = await getTemporaryDirectory();
-    final f = File('${dir.path}/shop-backup-${DateFormat('yyyy-MM-dd').format(DateTime.now())}.json');
-    await f.writeAsString(store.exportJson());
-    await Share.shareXFiles([XFile(f.path)], text: 'نسخة احتياطية - ${store.shop}');
-  }
+class _SettingsPageState extends State<SettingsPage> {
+  final shopC = TextEditingController(text: store.shop);
+  final phoneC = TextEditingController(text: store.shopPhone);
+  final addrC = TextEditingController(text: store.shopAddr);
+  final footC = TextEditingController(text: store.footer);
+  final curC = TextEditingController(text: store.cur);
+  final lowC = TextEditingController(text: '${store.low}');
+  final daysC = TextEditingController(text: '${store.minDays}');
 
-  Future<void> restore(BuildContext c) async {
-    final r = await FilePicker.platform.pickFiles();
-    if (r == null || r.files.single.path == null) return;
-    try {
-      final s = await File(r.files.single.path!).readAsString();
-      jsonDecode(s);
-      if (!c.mounted) return;
-      if (!await confirmDlg(c, 'ستُستبدل بيانات الجهاز الحالية بالنسخة. متابعة؟')) return;
-      store.importJson(s);
-      if (c.mounted) toast(c, 'تمت الاستعادة');
-    } catch (_) {
-      if (c.mounted) toast(c, 'الملف غير صالح');
-    }
+  Widget sec(String t, IconData i, List<Widget> kids) => Panel(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [Icon(i, size: 20), const SizedBox(width: 8), Text(t, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800))]),
+        const Divider(),
+        ...kids,
+      ]));
+
+  Widget swatches(List<int> hex, int sel, ValueChanged<int> on) => Wrap(spacing: 10, runSpacing: 10, children: [
+        for (var i = 0; i < hex.length; i++)
+          GestureDetector(
+              onTap: () => on(i),
+              child: CircleAvatar(
+                  backgroundColor: Color(hex[i]),
+                  radius: 18,
+                  child: sel == i ? const Icon(Icons.check, color: Colors.white) : null)),
+      ]);
+
+  Widget choice<T>(Map<T, String> m, T cur, ValueChanged<T> on) => Wrap(spacing: 6, runSpacing: 4, children: [
+        for (final e in m.entries)
+          ChoiceChip(label: Text(e.value), selected: cur == e.key, onSelected: (_) => on(e.key)),
+      ]);
+
+  Widget sw(String t, bool v, ValueChanged<bool> on, {String? sub}) => SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(t),
+      subtitle: sub == null ? null : Text(sub, style: const TextStyle(fontSize: 12)),
+      value: v,
+      onChanged: on);
+
+  Widget lbl(String t) => Padding(
+      padding: const EdgeInsets.only(top: 10, bottom: 6), child: Text(t, style: const TextStyle(fontWeight: FontWeight.w600)));
+
+  String ago(int ms) {
+    if (ms == 0) return 'لم تتم بعد';
+    final d = ((nowMs() - ms) / 86400000).floor();
+    return d <= 0 ? 'اليوم' : 'منذ $d يوم';
   }
 
   @override
   Widget build(BuildContext context) {
-    final nameC = TextEditingController(text: store.shop);
-    final lowC = TextEditingController(text: '${store.low}');
     return Scaffold(
       appBar: AppBar(title: const Text('الإعدادات')),
-      body: Live((_) => ListView(padding: const EdgeInsets.all(16), children: [
-            const Text('إعدادات المحل', style: _bold),
-            const SizedBox(height: 8),
-            tf(nameC, 'اسم المحل', onChanged: (v) {
-              store.shop = v;
-              store.save();
-            }),
-            const SizedBox(height: 8),
-            const Text('مظهر البرنامج', style: _bold),
-            const SizedBox(height: 8),
-            const Text('لون التطبيق'),
-            const SizedBox(height: 6),
-            Wrap(spacing: 10, children: [
-              for (var i = 0; i < kAccHex.length; i++)
-                GestureDetector(
-                    onTap: () {
-                      store.acc = i;
-                      store.save();
-                    },
-                    child: CircleAvatar(
-                        backgroundColor: Color(kAccHex[i]),
-                        radius: 20,
-                        child: store.acc == i ? const Icon(Icons.check, color: Colors.white) : null)),
+      body: Live((_) => ListView(padding: const EdgeInsets.all(12), children: [
+            sec('بيانات المحل', Icons.store, [
+              const SizedBox(height: 8),
+              tf(shopC, 'اسم المحل', onChanged: (v) => store.upd(() => store.shop = v)),
+              tf(phoneC, 'رقم هاتف المحل', tel: true, onChanged: (v) => store.upd(() => store.shopPhone = v)),
+              tf(addrC, 'العنوان', onChanged: (v) => store.upd(() => store.shopAddr = v)),
+              tf(footC, 'عبارة أسفل الفواتير والملفات', onChanged: (v) => store.upd(() => store.footer = v)),
+              tf(curC, 'اسم العملة', onChanged: (v) => store.upd(() => store.cur = v)),
+              const Text('تظهر هذه البيانات في الفواتير وملفات PDF وExcel التي تشاركها.', style: TextStyle(fontSize: 12)),
             ]),
-            const SizedBox(height: 12),
-            const Text('النمط'),
-            const SizedBox(height: 6),
-            SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'auto', label: Text('تلقائي')),
-                ButtonSegment(value: 'light', label: Text('فاتح')),
-                ButtonSegment(value: 'dark', label: Text('داكن')),
+            sec('المظهر', Icons.palette, [
+              lbl('لون التطبيق'),
+              swatches(kAccHex, store.acc, (i) => store.upd(() => store.acc = i)),
+              lbl('النمط'),
+              choice<String>({'auto': 'تلقائي', 'light': 'فاتح', 'dark': 'داكن'}, store.theme,
+                  (v) => store.upd(() => store.theme = v)),
+              lbl('حجم الخط'),
+              choice<int>({14: 'صغير', 16: 'متوسط', 18: 'كبير', 20: 'أكبر', 22: 'ضخم'}, store.fs.round(),
+                  (v) => store.upd(() => store.fs = v.toDouble())),
+              lbl('شكل الزوايا'),
+              choice<int>({0: 'حادة', 1: 'متوسطة', 2: 'دائرية'}, store.rad, (v) => store.upd(() => store.rad = v)),
+            ]),
+            sec('ألوان العمليات', Icons.color_lens, [
+              lbl('لون العملية الجديدة (دين جديد / إيجار جديد)'),
+              swatches(kOpHex, store.newCol, (i) => store.upd(() => store.newCol = i)),
+              lbl('لون الاستلام (استلام دفعة / استلام معدات)'),
+              swatches(kOpHex, store.recvCol, (i) => store.upd(() => store.recvCol = i)),
+            ]),
+            sec('الأقسام والاختصارات', Icons.dashboard_customize, [
+              sw('إظهار قسم المخزون', store.showStock, (v) => store.upd(() => store.showStock = v)),
+              sw('إظهار قسم الديون', store.showDebt, (v) => store.upd(() => store.showDebt = v)),
+              sw('إظهار قسم الإيجار', store.showRent, (v) => store.upd(() => store.showRent = v)),
+              const Divider(),
+              sw('شريط الاختصارات أعلى الشاشة', store.showQuick, (v) => store.upd(() => store.showQuick = v)),
+              sw('اختصار: تسجيل دين', store.qDebt, (v) => store.upd(() => store.qDebt = v)),
+              sw('اختصار: إيجار جديد', store.qRent, (v) => store.upd(() => store.qRent = v)),
+              sw('اختصار: إضافة صنف', store.qStock, (v) => store.upd(() => store.qStock = v)),
+              sw('اختصار: بيع جديد (للقائمة فقط)', store.qSell, (v) => store.upd(() => store.qSell = v),
+                  sub: 'الاختصارات المفعّلة تظهر أيضًا عند الضغط المطوّل على أيقونة التطبيق في الشاشة الرئيسية.'),
+            ]),
+            sec('المبيعات والمخزون', Icons.point_of_sale, [
+              sw('البيع الآجل (دين) هو الخيار الافتراضي', store.defCredit, (v) => store.upd(() {
+                    store.defCredit = v;
+                    store.credit = v;
+                  })),
+              sw('عرض الفاتورة بعد كل عملية بيع', store.autoInvoice, (v) => store.upd(() => store.autoInvoice = v)),
+              tf(lowC, 'حد التنبيه للكمية المنخفضة', isNum: true, onChanged: (v) => store.upd(() => store.low = int.tryParse(v) ?? 0)),
+            ]),
+            sec('الإيجار', Icons.construction, [
+              const SizedBox(height: 8),
+              tf(daysC, 'أقل عدد أيام يُحسب للإيجار', isNum: true,
+                  onChanged: (v) => store.upd(() => store.minDays = (int.tryParse(v) ?? 1).clamp(0, 30).toInt())),
+            ]),
+            sec('النسخ الاحتياطي', Icons.cloud_upload, [
+              lbl('نمط النسخ الاحتياطي'),
+              choice<String>({'manual': 'يدوي فقط', 'remind': 'تذكير بالنسخ على Drive', 'auto': 'تلقائي محلي + تذكير'},
+                  store.bkMode, (v) => store.upd(() => store.bkMode = v)),
+              if (store.bkMode != 'manual') ...[
+                lbl('كل كم يوم'),
+                choice<int>({1: 'يوميًا', 3: 'كل 3 أيام', 7: 'أسبوعيًا', 30: 'شهريًا'}, store.bkEvery,
+                    (v) => store.upd(() => store.bkEvery = v)),
               ],
-              selected: {store.theme},
-              onSelectionChanged: (s) {
-                store.theme = s.first;
-                store.save();
-              },
-            ),
-            const SizedBox(height: 12),
-            const Text('حجم الخط'),
-            const SizedBox(height: 6),
-            SegmentedButton<int>(
-              segments: const [
-                ButtonSegment(value: 14, label: Text('صغير')),
-                ButtonSegment(value: 16, label: Text('متوسط')),
-                ButtonSegment(value: 18, label: Text('كبير')),
-                ButtonSegment(value: 20, label: Text('أكبر')),
+              if (store.bkMode == 'auto') ...[
+                lbl('عدد النسخ المحلية المحفوظة'),
+                choice<int>({3: '3', 7: '7', 14: '14'}, store.bkKeep, (v) => store.upd(() => store.bkKeep = v)),
               ],
-              selected: {store.fs.round()},
-              onSelectionChanged: (s) {
-                store.fs = s.first.toDouble();
-                store.save();
-              },
-            ),
-            const SizedBox(height: 16),
-            const Text('المخزون', style: _bold),
-            const SizedBox(height: 8),
-            tf(lowC, 'حد التنبيه للكمية المنخفضة', isNum: true, onChanged: (v) {
-              store.low = int.tryParse(v) ?? 0;
-              store.save();
-            }),
-            const SizedBox(height: 8),
-            const Text('نسخة احتياطية', style: _bold),
-            const SizedBox(height: 8),
-            FilledButton.icon(
-                onPressed: () => backup(context),
-                icon: const Icon(Icons.cloud_upload),
-                label: const Text('حفظ على Google Drive')),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-                onPressed: () => restore(context),
-                icon: const Icon(Icons.cloud_download),
-                label: const Text('استعادة من ملف')),
-            const SizedBox(height: 4),
-            const Text('اختر Drive من قائمة المشاركة للحفظ، ومن منتقي الملفات للاستعادة. '
-                'الملف متوافق مع نسخة المتصفح أيضًا.',
-                style: TextStyle(fontSize: 12)),
-            const SizedBox(height: 20),
-            FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
-                onPressed: () async {
-                  if (await confirmDlg(context, 'سيتم حذف كل البيانات نهائيًا. متابعة؟')) store.wipe();
-                },
-                child: const Text('مسح كل البيانات')),
+              const SizedBox(height: 10),
+              Text('آخر نسخة على Drive: ${ago(store.lastDrive)}', style: const TextStyle(fontSize: 12)),
+              if (store.bkMode == 'auto') Text('آخر نسخة محلية: ${ago(store.lastBk)}', style: const TextStyle(fontSize: 12)),
+              const SizedBox(height: 10),
+              FilledButton.icon(
+                  onPressed: () => backupToDrive(context),
+                  icon: const Icon(Icons.cloud_upload),
+                  label: const Text('حفظ على Google Drive الآن')),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                  onPressed: () => restoreFromFile(context),
+                  icon: const Icon(Icons.cloud_download),
+                  label: const Text('استعادة من ملف (Drive أو الجهاز)')),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BackupsPage())),
+                  icon: const Icon(Icons.folder_copy),
+                  label: const Text('النسخ المحلية على الجهاز')),
+              const SizedBox(height: 8),
+              const Text(
+                  'الحفظ على Drive يتم عبر قائمة المشاركة: اختر Drive. النسخ المحلية التلقائية تحميك من تلف البيانات، '
+                  'لكنها تُحذف عند حذف التطبيق، لذلك احفظ نسخة على Drive قبل أي تحديث.',
+                  style: TextStyle(fontSize: 12)),
+            ]),
+            Panel(
+                child: FilledButton(
+                    style: FilledButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                    onPressed: () async {
+                      if (await confirmDlg(context, 'سيتم حذف كل البيانات نهائيًا. متابعة؟')) store.wipe();
+                    },
+                    child: const Text('مسح كل البيانات'))),
           ])),
     );
   }
+}
+
+class BackupsPage extends StatefulWidget {
+  const BackupsPage({super.key});
+  @override
+  State<BackupsPage> createState() => _BackupsPageState();
+}
+
+class _BackupsPageState extends State<BackupsPage> {
+  List<File> files = [];
+
+  Future<void> load() async {
+    final l = await store.backups();
+    if (mounted) setState(() => files = l);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    load();
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: const Text('النسخ المحلية')),
+        body: ListView(padding: const EdgeInsets.all(12), children: [
+          FilledButton.icon(
+              onPressed: () async {
+                await store.localBackup();
+                await load();
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('إنشاء نسخة محلية الآن')),
+          const SizedBox(height: 10),
+          if (files.isEmpty) const Center(child: Padding(padding: EdgeInsets.all(20), child: Text('لا توجد نسخ محلية'))),
+          for (final f in files)
+            Panel(
+                child: itemRow(
+                    title: f.path.split('/').last,
+                    sub: subText('${fd(f.lastModifiedSync().millisecondsSinceEpoch)} · ${(f.lengthSync() / 1024).round()} ك.ب'),
+                    trail: Row(mainAxisSize: MainAxisSize.min, children: [
+                      IconButton(
+                          icon: const Icon(Icons.restore),
+                          onPressed: () async {
+                            if (!await confirmDlg(context, 'استعادة هذه النسخة؟ ستُستبدل البيانات الحالية.')) return;
+                            try {
+                              store.importJson(await f.readAsString());
+                              if (context.mounted) toast(context, 'تمت الاستعادة');
+                            } catch (_) {
+                              if (context.mounted) toast(context, 'الملف غير صالح');
+                            }
+                          }),
+                      IconButton(
+                          icon: const Icon(Icons.share),
+                          onPressed: () => Share.shareXFiles([XFile(f.path)])),
+                      IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () async {
+                            await f.delete();
+                            await load();
+                          }),
+                    ]))),
+        ]),
+      );
 }
