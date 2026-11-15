@@ -14,6 +14,8 @@ jobs:
           flutter-version: '3.x'
           channel: 'stable'
       - run: flutter create . --platforms=android
+      - run: sed -i 's/compileSdk = 33/compileSdk = 34/g' android/app/build.gradle.kts || true
+      - run: sed -i 's/compileSdkVersion 33/compileSdkVersion 34/g' android/app/build.gradle || true
       - run: flutter pub get
       - run: flutter build apk --release
       - name: Upload APK
@@ -21,4 +23,3 @@ jobs:
         with:
           name: release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-          
