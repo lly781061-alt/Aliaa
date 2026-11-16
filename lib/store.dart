@@ -171,7 +171,6 @@ class StoreData extends ChangeNotifier {
   int minRentalDays = 1;
   double fontScale = 1.0;
   
-  // تخصيص الألوان
   String nameColor = 'black';
   String dateColor = 'grey';
   String activeColor = 'blue';
@@ -228,4 +227,124 @@ class StoreData extends ChangeNotifier {
     prefs.setDouble('fontScale', fontScale);
     
     prefs.setString('nameColor', nameColor);
-    prefs
+    prefs.setString('dateColor', dateColor);
+    prefs.setString('activeColor', activeColor);
+    prefs.setString('returnedColor', returnedColor);
+    notifyListeners();
+  }
+
+  String exportToJson() => jsonEncode({
+        'debts': debts.map((e) => e.toJson()).toList(),
+        'rents': rents.map((e) => e.toJson()).toList(),
+        'items': items.map((e) => e.toJson()).toList(),
+        'equipments': equipments.map((e) => e.toJson()).toList(),
+        'customSections': customSections,
+        'storeName': storeName,
+      });
+
+  bool importFromJson(String jsonStr) {
+    try {
+      final data = jsonDecode(jsonStr);
+      if (data['debts'] != null) debts = (data['debts'] as List).map((e) => CustomerDebt.fromJson(e)).toList();
+      if (data['rents'] != null) rents = (data['rents'] as List).map((e) => ActiveRental.fromJson(e)).toList();
+      if (data['items'] != null) items = (data['items'] as List).map((e) => StoreItem.fromJson(e)).toList();
+      if (data['equipments'] != null) equipments = (data['equipments'] as List).map((e) => RentalEquipment.fromJson(e)).toList();
+      if (data['customSections'] != null) customSections = List<String>.from(data['customSections']);
+      if (data['storeName'] != null) storeName = data['storeName'];
+      saveData();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  void addCustomerDebt(CustomerDebt c) {
+    debts.add(c);
+    saveData();
+  }
+
+  void addTransactionToCustomer(String customerId, double amount, bool isPayment, String note) {
+    int idx = debts.indexWhere((e) => e.id == customerId);
+    if (idx != -1) {
+      final trans = DebtTransaction(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        amount: amount,
+        date: DateTime.now().toString().substring(0, 16),
+        isPayment: isPayment,
+        note: note,
+      );
+      debts[idx].transactions.insert(0, trans);
+      saveData();
+    }
+  }
+
+  void updateCustomerInfo(String customerId, String name, String phone, String? imagePath) {
+    int idx = debts.indexWhere((e) => e.id == customerId);
+    if (idx != -1) {
+      debts[idx].name = name;
+      debts[idx].phone = phone;
+      if (imagePath != null) debts[idx].imagePath = imagePath;
+      saveData();
+    }
+  }
+
+  void removeCustomerDebt(String customerId) {
+    debts.removeWhere((e) => e.id == customerId);
+    saveData();
+  }
+
+  void addActiveRental(ActiveRental r) {
+    rents.insert(0, r);
+    int eqIdx = equipments.indexWhere((e) => e.name == r.equipmentName);
+    if (eqIdx != -1) {
+      equipments[eqIdx].availableCount -= r.count;
+      if (equipments[eqIdx].availableCount < 0) equipments[eqIdx].availableCount = 0;
+    }
+    saveData();
+  }
+
+  void returnRental(String id) {
+    int idx = rents.indexWhere((e) => e.id == id);
+    if (idx != -1) {
+      rents[idx].isReturned = true;
+      int eqIdx = equipments.indexWhere((e) => e.name == rents[idx].equipmentName);
+      if (eqIdx != -1) {
+        equipments[eqIdx].availableCount += rents[idx].count;
+        if (equipments[eqIdx].availableCount > equipments[eqIdx].totalCount) {
+          equipments[eqIdx].availableCount = equipments[eqIdx].totalCount;
+        }
+      }
+      saveData();
+    }
+  }
+
+  void addItem(StoreItem item) {
+    items.add(item);
+    saveData();
+  }
+
+  void updateItem(StoreItem item) {
+    int idx = items.indexWhere((e) => e.id == item.id);
+    if (idx != -1) {
+      items[idx] = item;
+      saveData();
+    }
+  }
+
+  void removeItem(String id) {
+    items.removeWhere((e) => e.id == id);
+    saveData();
+  }
+
+  void addSection(String s) {
+    if (!customSections.contains(s)) {
+      customSections.add(s);
+      saveData();
+    }
+  }
+
+  void removeSection(String s) {
+    customSections.remove(s);
+    saveData();
+  }
+}
