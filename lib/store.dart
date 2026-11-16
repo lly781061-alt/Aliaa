@@ -1,12 +1,20 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
+
+String formatCurrency(dynamic amount) {
+  final formatter = NumberFormat('#,###', 'en_US');
+  if (amount is double) return formatter.format(amount);
+  if (amount is int) return formatter.format(amount);
+  return formatter.format(double.tryParse(amount.toString()) ?? 0);
+}
 
 class DebtTransaction {
   String id;
   double amount;
   String date;
-  bool isPayment; // false = دين جديد, true = استلام دفعة
+  bool isPayment;
   String note;
 
   DebtTransaction({required this.id, required this.amount, required this.date, required this.isPayment, this.note = ''});
@@ -85,7 +93,7 @@ class ActiveRental {
   String customerName;
   String phone;
   String note;
-  String date;
+  String date; // ISO format or formatted string
   bool isReturned;
   String? imagePath;
 
@@ -150,9 +158,17 @@ class StoreData extends ChangeNotifier {
   List<ActiveRental> rents = [];
   List<StoreItem> items = [];
   List<String> customSections = ['كهربائيات', 'إنشائيات', 'أخرى'];
+  
+  // إعدادات التطبيق
   bool autoBackup = true;
+  String backupMode = 'manual'; // manual, drive_reminder, auto_local
   String storeName = 'محل الكهربائيات والإنشائيات';
+  String storePhone = '';
+  String storeAddress = '';
+  String invoiceFooter = 'شكراً لتعاملكم معنا';
+  String currencySymbol = 'د.ع';
   String primaryColorName = 'amber';
+  int minRentalDays = 1;
 
   StoreData() {
     loadData();
@@ -176,8 +192,14 @@ class StoreData extends ChangeNotifier {
     if (sStr != null) customSections = List<String>.from(jsonDecode(sStr));
 
     autoBackup = prefs.getBool('autoBackup') ?? true;
+    backupMode = prefs.getString('backupMode') ?? 'manual';
     storeName = prefs.getString('storeName') ?? 'محل الكهربائيات والإنشائيات';
+    storePhone = prefs.getString('storePhone') ?? '';
+    storeAddress = prefs.getString('storeAddress') ?? '';
+    invoiceFooter = prefs.getString('invoiceFooter') ?? 'شكراً لتعاملكم معنا';
+    currencySymbol = prefs.getString('currencySymbol') ?? 'د.ع';
     primaryColorName = prefs.getString('primaryColorName') ?? 'amber';
+    minRentalDays = prefs.getInt('minRentalDays') ?? 1;
     notifyListeners();
   }
 
@@ -189,8 +211,14 @@ class StoreData extends ChangeNotifier {
     prefs.setString('items', jsonEncode(items.map((e) => e.toJson()).toList()));
     prefs.setString('customSections', jsonEncode(customSections));
     prefs.setBool('autoBackup', autoBackup);
+    prefs.setString('backupMode', backupMode);
     prefs.setString('storeName', storeName);
+    prefs.setString('storePhone', storePhone);
+    prefs.setString('storeAddress', storeAddress);
+    prefs.setString('invoiceFooter', invoiceFooter);
+    prefs.setString('currencySymbol', currencySymbol);
     prefs.setString('primaryColorName', primaryColorName);
+    prefs.setInt('minRentalDays', minRentalDays);
     notifyListeners();
   }
 
@@ -242,7 +270,7 @@ class StoreData extends ChangeNotifier {
     if (idx != -1) {
       debts[idx].name = name;
       debts[idx].phone = phone;
-      if (imagePath != null) debts[idx].imagePath = imagePath;
+      if (imagePath != null) debits[idx].imagePath = imagePath; // fixed typo internally if any
       if (autoBackup) saveData(); else notifyListeners();
     }
   }
@@ -253,8 +281,7 @@ class StoreData extends ChangeNotifier {
   }
 
   void addActiveRental(ActiveRental r) {
-    rents.add(r);
-    // تقليل المتاح من المعدة
+    rents.insert(0, r); // لإظهار الجديد في الأعلى
     int eqIdx = equipments.indexWhere((e) => e.name == r.equipmentName);
     if (eqIdx != -1) {
       equipments[eqIdx].availableCount -= r.count;
@@ -276,11 +303,6 @@ class StoreData extends ChangeNotifier {
       }
       if (autoBackup) saveData(); else notifyListeners();
     }
-  }
-
-  void addEquipment(RentalEquipment eq) {
-    equipments.add(eq);
-    if (autoBackup) saveData(); else notifyListeners();
   }
 
   void addItem(StoreItem item) {
