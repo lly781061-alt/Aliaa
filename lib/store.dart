@@ -59,23 +59,60 @@ class CustomerDebt {
       );
 }
 
-class RentItem {
+class RentalEquipment {
   String id;
   String name;
-  String phone;
-  double amount;
-  String date;
-  bool isReturned;
-  RentItem({required this.id, required this.name, this.phone = '', required this.amount, required this.date, required this.isReturned});
+  int totalCount;
+  int availableCount;
+  double pricePerDay;
 
-  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'phone': phone, 'amount': amount, 'date': date, 'isReturned': isReturned};
-  factory RentItem.fromJson(Map<String, dynamic> json) => RentItem(
+  RentalEquipment({required this.id, required this.name, required this.totalCount, required this.availableCount, required this.pricePerDay});
+
+  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'totalCount': totalCount, 'availableCount': availableCount, 'pricePerDay': pricePerDay};
+  factory RentalEquipment.fromJson(Map<String, dynamic> json) => RentalEquipment(
         id: json['id'] ?? '',
         name: json['name'] ?? '',
+        totalCount: json['totalCount'] ?? 0,
+        availableCount: json['availableCount'] ?? 0,
+        pricePerDay: (json['pricePerDay'] as num?)?.toDouble() ?? 0.0,
+      );
+}
+
+class ActiveRental {
+  String id;
+  String equipmentName;
+  int count;
+  String customerName;
+  String phone;
+  String note;
+  String date;
+  bool isReturned;
+  String? imagePath;
+
+  ActiveRental({required this.id, required this.equipmentName, required this.count, required this.customerName, required this.phone, required this.note, required this.date, required this.isReturned, this.imagePath});
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'equipmentName': equipmentName,
+        'count': count,
+        'customerName': customerName,
+        'phone': phone,
+        'note': note,
+        'date': date,
+        'isReturned': isReturned,
+        'imagePath': imagePath,
+      };
+
+  factory ActiveRental.fromJson(Map<String, dynamic> json) => ActiveRental(
+        id: json['id'] ?? '',
+        equipmentName: json['equipmentName'] ?? '',
+        count: json['count'] ?? 1,
+        customerName: json['customerName'] ?? '',
         phone: json['phone'] ?? '',
-        amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
+        note: json['note'] ?? '',
         date: json['date'] ?? '',
         isReturned: json['isReturned'] ?? false,
+        imagePath: json['imagePath'],
       );
 }
 
@@ -104,11 +141,16 @@ class StoreItem {
 
 class StoreData extends ChangeNotifier {
   List<CustomerDebt> debts = [];
-  List<RentItem> rents = [];
+  List<RentalEquipment> equipments = [
+    RentalEquipment(id: '1', name: 'سقالة حديد', totalCount: 30, availableCount: 30, pricePerDay: 2000),
+    RentalEquipment(id: '2', name: 'خلاطة كونكريت', totalCount: 3, availableCount: 3, pricePerDay: 15000),
+    RentalEquipment(id: '3', name: 'مثقاب هدم', totalCount: 4, availableCount: 4, pricePerDay: 10000),
+    RentalEquipment(id: '4', name: 'سلم ألومنيوم', totalCount: 6, availableCount: 6, pricePerDay: 5000),
+  ];
+  List<ActiveRental> rents = [];
   List<StoreItem> items = [];
   List<String> customSections = ['كهربائيات', 'إنشائيات', 'أخرى'];
   bool autoBackup = true;
-  bool driveAutoSync = false;
   String storeName = 'محل الكهربائيات والإنشائيات';
   String primaryColorName = 'amber';
 
@@ -119,17 +161,21 @@ class StoreData extends ChangeNotifier {
   Future<void> loadData() async {
     final prefs = await SharedPreferences.getInstance();
     final dStr = prefs.getString('debts_v2');
-    if (dStr != null) {
-      debts = (jsonDecode(dStr) as List).map((e) => CustomerDebt.fromJson(e)).toList();
-    }
-    final rStr = prefs.getString('rents');
-    if (rStr != null) rents = (jsonDecode(rStr) as List).map((e) => RentItem.fromJson(e)).toList();
+    if (dStr != null) debts = (jsonDecode(dStr) as List).map((e) => CustomerDebt.fromJson(e)).toList();
+    
+    final eqStr = prefs.getString('equipments');
+    if (eqStr != null) equipments = (jsonDecode(eqStr) as List).map((e) => RentalEquipment.fromJson(e)).toList();
+
+    final rStr = prefs.getString('rents_v2');
+    if (rStr != null) rents = (jsonDecode(rStr) as List).map((e) => ActiveRental.fromJson(e)).toList();
+
     final iStr = prefs.getString('items');
     if (iStr != null) items = (jsonDecode(iStr) as List).map((e) => StoreItem.fromJson(e)).toList();
+
     final sStr = prefs.getString('customSections');
     if (sStr != null) customSections = List<String>.from(jsonDecode(sStr));
+
     autoBackup = prefs.getBool('autoBackup') ?? true;
-    driveAutoSync = prefs.getBool('driveAutoSync') ?? false;
     storeName = prefs.getString('storeName') ?? 'محل الكهربائيات والإنشائيات';
     primaryColorName = prefs.getString('primaryColorName') ?? 'amber';
     notifyListeners();
@@ -138,11 +184,11 @@ class StoreData extends ChangeNotifier {
   Future<void> saveData() async {
     final prefs = await SharedPreferences.getInstance();
     prefs.setString('debts_v2', jsonEncode(debts.map((e) => e.toJson()).toList()));
-    prefs.setString('rents', jsonEncode(rents.map((e) => e.toJson()).toList()));
+    prefs.setString('equipments', jsonEncode(equipments.map((e) => e.toJson()).toList()));
+    prefs.setString('rents_v2', jsonEncode(rents.map((e) => e.toJson()).toList()));
     prefs.setString('items', jsonEncode(items.map((e) => e.toJson()).toList()));
     prefs.setString('customSections', jsonEncode(customSections));
     prefs.setBool('autoBackup', autoBackup);
-    prefs.setBool('driveAutoSync', driveAutoSync);
     prefs.setString('storeName', storeName);
     prefs.setString('primaryColorName', primaryColorName);
     notifyListeners();
@@ -160,7 +206,7 @@ class StoreData extends ChangeNotifier {
     try {
       final data = jsonDecode(jsonStr);
       if (data['debts'] != null) debts = (data['debts'] as List).map((e) => CustomerDebt.fromJson(e)).toList();
-      if (data['rents'] != null) rents = (data['rents'] as List).map((e) => RentItem.fromJson(e)).toList();
+      if (data['rents'] != null) rents = (data['rents'] as List).map((e) => ActiveRental.fromJson(e)).toList();
       if (data['items'] != null) items = (data['items'] as List).map((e) => StoreItem.fromJson(e)).toList();
       if (data['customSections'] != null) customSections = List<String>.from(data['customSections']);
       if (data['storeName'] != null) storeName = data['storeName'];
@@ -206,21 +252,34 @@ class StoreData extends ChangeNotifier {
     if (autoBackup) saveData(); else notifyListeners();
   }
 
-  void addRent(RentItem r) {
+  void addActiveRental(ActiveRental r) {
     rents.add(r);
+    // تقليل المتاح من المعدة
+    int eqIdx = equipments.indexWhere((e) => e.name == r.equipmentName);
+    if (eqIdx != -1) {
+      equipments[eqIdx].availableCount -= r.count;
+      if (equipments[eqIdx].availableCount < 0) equipments[eqIdx].availableCount = 0;
+    }
     if (autoBackup) saveData(); else notifyListeners();
   }
 
-  void updateRent(String id, String name, String phone, double amount, String date, bool isReturned) {
+  void returnRental(String id) {
     int idx = rents.indexWhere((e) => e.id == id);
     if (idx != -1) {
-      rents[idx] = RentItem(id: id, name: name, phone: phone, amount: amount, date: date, isReturned: isReturned);
+      rents[idx].isReturned = true;
+      int eqIdx = equipments.indexWhere((e) => e.name == rents[idx].equipmentName);
+      if (eqIdx != -1) {
+        equipments[eqIdx].availableCount += rents[idx].count;
+        if (equipments[eqIdx].availableCount > equipments[eqIdx].totalCount) {
+          equipments[eqIdx].availableCount = equipments[eqIdx].totalCount;
+        }
+      }
       if (autoBackup) saveData(); else notifyListeners();
     }
   }
 
-  void removeRent(String id) {
-    rents.removeWhere((e) => e.id == id);
+  void addEquipment(RentalEquipment eq) {
+    equipments.add(eq);
     if (autoBackup) saveData(); else notifyListeners();
   }
 
