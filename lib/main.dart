@@ -39,16 +39,15 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // الترتيب من اليمين لليسار: 0: بيع، 1: المخزن، 2: الديون، 3: الإيجار، 4: التقارير
   int _currentIndex = 3; 
   String globalSearch = '';
 
-  final List<Widget> _screens = [
-    const SalesScreen(),
-    const InventoryScreen(),
-    const DebtsScreen(),
-    const RentsScreen(),
-    const ReportsScreen(),
+  final List<Widget> _screens = const [
+    SalesScreen(),
+    InventoryScreen(),
+    DebtsScreen(),
+    RentsScreen(),
+    ReportsScreen(),
   ];
 
   @override
@@ -142,18 +141,4 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.inventory_2), label: 'المخزن'),
           BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet), label: 'الديون'),
           BottomNavigationBarItem(icon: Icon(Icons.handyman), label: 'الإيجار'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'التقارير'),
-        ],
-      ),
-    );
-  }
-}
-
-class GlobalSearchResults extends StatelessWidget {
-  final String query;
-  const GlobalSearchResults({super.key, required this.query});
-
-  @override
-  Widget build(BuildContext context) {
-    final store = Provider.of<StoreData>(context);
-    final items = store.items.where((e) => e.name.contains(query) ||
+          BottomNavigationBar
