@@ -320,7 +320,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 }
 
-// 2. قسم الديون
+// 2. قسم الديون (مع البحث الذكي بالحرف وتغيير الاسم والتاريخ والألوان)
 class DebtsScreen extends StatefulWidget {
   const DebtsScreen({super.key});
   @override
@@ -333,7 +333,7 @@ class _DebtsScreenState extends State<DebtsScreen> {
   @override
   Widget build(BuildContext context) {
     final store = Provider.of<StoreData>(context);
-    final filtered = store.debts.where((d) => d.name.contains(search) || d.date.contains(search)).toList();
+    final filtered = store.debts.where((d) => d.name.toLowerCase().contains(search.toLowerCase()) || d.date.contains(search)).toList();
 
     double totalDebts = store.debts.where((e) => !e.isPaid).fold(0.0, (s, e) => s + e.amount);
     double totalReceived = store.debts.where((e) => e.isPaid).fold(0.0, (s, e) => s + e.amount);
@@ -451,7 +451,7 @@ class _DebtsScreenState extends State<DebtsScreen> {
   }
 }
 
-// 3. قسم الإيجار
+// 3. قسم الإيجار (مع الإكمال التلقائي وتغيير التاريخ والاسم)
 class RentsScreen extends StatefulWidget {
   const RentsScreen({super.key});
   @override
@@ -464,7 +464,7 @@ class _RentsScreenState extends State<RentsScreen> {
   @override
   Widget build(BuildContext context) {
     final store = Provider.of<StoreData>(context);
-    final filtered = store.rents.where((r) => r.name.contains(search) || r.date.contains(search)).toList();
+    final filtered = store.rents.where((r) => r.name.toLowerCase().contains(search.toLowerCase()) || r.date.contains(search)).toList();
 
     double totalRents = store.rents.fold(0.0, (s, e) => s + e.amount);
     int renterCount = store.rents.map((e) => e.name).toSet().length;
