@@ -43,7 +43,7 @@ class QRBackupScreen extends StatelessWidget {
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
               icon: const Icon(Icons.share),
-              label: const Text('مشاركة الملف (Google Drive أو واتساب)'),
+              label: const Text('مشاركة الملف (واتساب أو Drive)'),
               onPressed: () => _shareFile(context),
             ),
             const SizedBox(height: 10),
