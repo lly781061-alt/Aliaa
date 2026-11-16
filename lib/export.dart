@@ -16,7 +16,7 @@ class QRBackupScreen extends StatelessWidget {
       final directory = await getTemporaryDirectory();
       final file = File('${directory.path}/store_backup_${DateTime.now().millisecondsSinceEpoch}.json');
       await file.writeAsString(jsonStr);
-      await Share.shareXFiles([XFile(file.path)], text: 'نسخة احتياطية لقاعدة بيانات المحل');
+      await Share.shareXFiles([XFile(file.path)], text: 'نسخة احتياطية لقاعدة بيانات المحل (Google Drive / Email)');
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('خطأ في مشاركة الملف: $e')));
     }
@@ -26,12 +26,12 @@ class QRBackupScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final jsonString = storeData.exportToJson();
     return Scaffold(
-      appBar: AppBar(title: const Text('النسخ الاحتياطي والمشاركة')),
+      appBar: AppBar(title: const Text('النسخ الاحتياطي والمزامنة السحابية')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            const Text('باركود النسخة الاحتياطية (للنقل السريع بين الهواتف):', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+            const Text('باركود المزامنة السريعة بين الهواتف:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
             Expanded(
               child: Center(
@@ -43,14 +43,14 @@ class QRBackupScreen extends StatelessWidget {
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
               icon: const Icon(Icons.share),
-              label: const Text('مشاركة الملف (واتساب أو Drive)'),
+              label: const Text('مشاركة عبر Google Drive أو الإيميل أو واتساب'),
               onPressed: () => _shareFile(context),
             ),
             const SizedBox(height: 10),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50), backgroundColor: Colors.teal, foregroundColor: Colors.white),
               icon: const Icon(Icons.camera_alt),
-              label: const Text('قراءة باركود لاستعادة النسخة'),
+              label: const Text('قراءة باركود لاستعادة البيانات'),
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => QRScanScreen(storeData: storeData))),
             ),
           ],
@@ -82,7 +82,7 @@ class _QRScanScreenState extends State<QRScanScreen> {
               scanned = true;
               bool success = widget.storeData.importFromJson(barcode.rawValue!);
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(success ? 'تمت استعادة البيانات بنجاح!' : 'فشل قراءة الباركود')));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(success ? 'تمت استعادة البيانات بنجاح وتزامنت!' : 'فشل قراءة الباركود')));
                 Navigator.pop(context);
                 Navigator.pop(context);
               }
