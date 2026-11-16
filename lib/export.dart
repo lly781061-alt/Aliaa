@@ -12,7 +12,7 @@ class QRBackupScreen extends StatelessWidget {
     final jsonString = storeData.exportToJson();
 
     return Scaffold(
-      appBar.new(title: const Text('مشاركة ونقل النسخة الاحتياطية عبر الباركود')),
+      appBar: AppBar(title: const Text('مشاركة ونقل النسخة الاحتياطية عبر الباركود')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
