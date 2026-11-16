@@ -11,12 +11,12 @@ class QRBackupScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final jsonString = storeData.exportToJson();
     return Scaffold(
-      appBar: AppBar(title: const Text('مشاركة النسخة عبر الباركود')),
+      appBar: AppBar(title: const Text('مشاركة واستعادة النسخة عبر الباركود')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            const Text('توليد باركود لنقل البيانات لهاتف آخر:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('باركود النسخة الاحتياطية لنقلها لهاتف آخر:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
             Expanded(
               child: Center(
@@ -28,7 +28,7 @@ class QRBackupScreen extends StatelessWidget {
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
               icon: const Icon(Icons.camera_alt),
-              label: const Text('قراءة باركود لاستعادة البيانات'),
+              label: const Text('قراءة باركود لاستعادة النسخة من هاتف آخر'),
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => QRScanScreen(storeData: storeData))),
             ),
           ],
@@ -51,7 +51,7 @@ class _QRScanScreenState extends State<QRScanScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('مسح الباركود')),
+      appBar: AppBar(title: const Text('مسح الباركود للاستعادة')),
       body: MobileScanner(
         onDetect: (capture) {
           if (scanned) return;
@@ -60,7 +60,7 @@ class _QRScanScreenState extends State<QRScanScreen> {
               scanned = true;
               bool success = widget.storeData.importFromJson(barcode.rawValue!);
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(success ? 'تمت الاستعادة بنجاح!' : 'فشل القراءة')));
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(success ? 'تمت استعادة البيانات بنجاح!' : 'فشل قراءة الباركود')));
                 Navigator.pop(context);
                 Navigator.pop(context);
               }
