@@ -28,6 +28,10 @@ jobs:
       - name: Generate Modern Android Files
         run: flutter create --project-name store_app --platforms=android .
 
+      - name: Upgrade Gradle Wrapper to avoid 429 errors
+        run: |
+          echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-all.zip" > android/gradle/wrapper/gradle-wrapper.properties
+
       - name: Add Camera Permission for QR Scanner
         run: |
           sed -i 's/<application/<uses-permission android:name="android.permission.CAMERA"\/>\n    <application/' android/app/src/main/AndroidManifest.xml
