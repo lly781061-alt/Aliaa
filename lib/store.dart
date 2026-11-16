@@ -43,7 +43,7 @@ class StoreItem {
   String name;
   double price;
   int quantity;
-  String section; // اختيارية
+  String section; // اختياري
   String? imagePath;
   String priceColor; // لون السعر
 
