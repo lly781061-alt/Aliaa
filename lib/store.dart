@@ -244,3 +244,20 @@ class StoreData extends ChangeNotifier {
       return false;
     }
   }
+
+  void addCustomerDebt(CustomerDebt c) {
+    debts.add(c);
+    if (autoBackup) saveData(); else notifyListeners();
+  }
+
+  void addTransactionToCustomer(String customerId, double amount, bool isPayment, String note) {
+    int idx = debts.indexWhere((e) => e.id == customerId);
+    if (idx != -1) {
+      final trans = DebtTransaction(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        amount: amount,
+        date: DateTime.now().toString().substring(0, 16),
+        isPayment: isPayment,
+        note: note,
+      );
+      debts[idx].transactions.insert(0, trans);
