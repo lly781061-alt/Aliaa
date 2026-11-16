@@ -34,7 +34,7 @@ class QRBackupScreen extends StatelessWidget {
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
                 icon: const Icon(Icons.share),
-                label: const Text('مشاركة بيانات النسخ الاحتياطي كنص'),
+                label: const Text('مشاركة بيانات النسخ الاحتياطي كنص أو ملف'),
                 onPressed: () {
                   Share.share(jsonData);
                 },
@@ -72,7 +72,7 @@ class _QRScanScreenState extends State<QRScanScreen> {
               scanned = true;
               bool success = widget.storeData.importFromJson(barcode.rawValue!);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(success ? 'تم استعادة البيانات بنجاح!' : 'فشل قراءة البيانات من الباركود')),
+                SnackBar(content: Text(success ? 'تم استعادة البيانات ومزامنتها بنجاح!' : 'فشل قراءة البيانات من الباركود')),
               );
               Navigator.pop(context);
               break;
