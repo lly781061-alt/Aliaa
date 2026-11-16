@@ -1,636 +1,239 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:qr_flutter/qr_flutter.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'store.dart';
+import 'export.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const ShopManagerApp());
+void main() {
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => StoreData(),
+      child: const StoreApp(),
+    ),
+  );
 }
 
-class ShopManagerApp extends StatelessWidget {
-  const ShopManagerApp({super.key});
+class StoreApp extends StatelessWidget {
+  const StoreApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'نظام إدارة المحل',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-        fontFamily: 'Cairo', // إذا كنت تستخدم خط عربي أضفه هنا
-      ),
-      home: const MainScreen(),
+      title: 'متجر برو الشامل',
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.indigo,
+        useMaterial3: true,
+      ),
+      builder: (context, child) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: child!,
+        );
+      },
+      home: const HomeScreen(),
     );
   }
 }
 
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  String globalSearchQuery = '';
 
-  // ================== البيانات الأساسية ==================
-  List<Map<String, dynamic>> debts = [];
-  List<Map<String, dynamic>> rents = [];
-  List<Map<String, dynamic>> inventory = [];
-  List<String> categories = ['عام', 'كهرباء', 'مطاعم'];
-  
-  bool autoBackup = true;
-  Color globalPriceColor = Colors.green;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData(); // تحميل البيانات عند فتح التطبيق
-  }
-
-  // ================== دوال حفظ واسترجاع البيانات ==================
-  Future<void> _loadData() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      debts = List<Map<String, dynamic>>.from(jsonDecode(prefs.getString('debts') ?? '[]'));
-      rents = List<Map<String, dynamic>>.from(jsonDecode(prefs.getString('rents') ?? '[]'));
-      inventory = List<Map<String, dynamic>>.from(jsonDecode(prefs.getString('inventory') ?? '[]'));
-      categories = List<String>.from(jsonDecode(prefs.getString('categories') ?? '["عام", "كهرباء"]'));
-    });
-  }
-
-  Future<void> _saveData() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('debts', jsonEncode(debts));
-    await prefs.setString('rents', jsonEncode(rents));
-    await prefs.setString('inventory', jsonEncode(inventory));
-    await prefs.setString('categories', jsonEncode(categories));
-  }
-
-  // دوال الحسابات
-  double get totalDebts => debts.fold(0, (sum, item) => sum + (item['amount'] as num));
-  double get receivedDebts => debts.where((item) => item['isReceived']).fold(0, (sum, item) => sum + (item['amount'] as num));
-  int get debtorsCount => debts.map((item) => item['name']).toSet().length;
-  int get rentersCount => rents.map((item) => item['name']).toSet().length;
+  final List<Widget> _screens = [
+    const InventoryScreen(),
+    const DebtsScreen(),
+    const RentsScreen(),
+    const SettingsScreen(),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> pages = [
-      _buildHomeScreen(),
-      _buildDebtsScreen(),
-      _buildRentsScreen(),
-      _buildInventoryScreen(),
-      _buildSettingsScreen(),
-    ];
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(['الرئيسية', 'الديون', 'الإيجار', 'المخزن', 'الإعدادات'][_currentIndex]),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () => _showGlobalSearch(context),
-          ),
-        ],
-      ),
-      body: pages[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'الرئيسية'),
-          BottomNavigationBarItem(icon: Icon(Icons.money), label: 'الديون'),
-          BottomNavigationBarItem(icon: Icon(Icons.house), label: 'الإيجار'),
-          BottomNavigationBarItem(icon: Icon(Icons.inventory), label: 'المخزن'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'الإعدادات'),
-        ],
-      ),
-    );
-  }
-
-  // ====================== 1. الشاشة الرئيسية (الإحصائيات) ======================
-  Widget _buildHomeScreen() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text('ملخص الإحصائيات', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 20),
-          _buildStatCard('إجمالي الديون المسجلة', '${totalDebts.toStringAsFixed(0)} د.ع', Colors.orange),
-          _buildStatCard('الديون المستلمة', '${receivedDebts.toStringAsFixed(0)} د.ع', Colors.green),
-          _buildStatCard('عدد المدينين (الأشخاص)', '$debtorsCount أشخاص', Colors.blue),
-          _buildStatCard('عدد المؤجرين (الأشخاص)', '$rentersCount أشخاص', Colors.purple),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String title, String value, Color color) {
-    return Card(
-      color: color.withOpacity(0.1),
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: color)),
-        trailing: Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-      ),
-    );
-  }
-
-  // ====================== 2. شاشة الديون ======================
-  Widget _buildDebtsScreen() {
-    return Scaffold(
-      body: debts.isEmpty
-          ? const Center(child: Text('لا توجد ديون مسجلة'))
-          : ListView.builder(
-              itemCount: debts.length,
-              itemBuilder: (context, index) {
-                final debt = debts[index];
-                DateTime date = DateTime.parse(debt['date']);
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  child: ListTile(
-                    title: Text(debt['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text(
-                      DateFormat('yyyy-MM-dd').format(date),
-                      style: TextStyle(
-                        color: debt['isReceived'] ? Colors.red : Colors.blue, // اللون الأزرق للدين والأحمر للاستلام
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('${debt['amount']} د.ع', style: const TextStyle(fontSize: 16)),
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.grey),
-                          onPressed: () => _editName(debts, index, 'اسم المدين'),
-                        ),
-                        Checkbox(
-                          value: debt['isReceived'],
-                          onChanged: (val) {
-                            setState(() => debt['isReceived'] = val);
-                            _saveData();
-                          },
-                        )
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addDebt,
-        backgroundColor: Colors.blue,
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
-
-  void _addDebt() {
-    TextEditingController nameController = TextEditingController();
-    TextEditingController amountController = TextEditingController();
-    DateTime selectedDate = DateTime.now();
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('إضافة دين جديد'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(controller: nameController, decoration: const InputDecoration(labelText: 'اسم الشخص')),
-              TextField(controller: amountController, decoration: const InputDecoration(labelText: 'المبلغ'), keyboardType: TextInputType.number),
-              const SizedBox(height: 10),
-              ListTile(
-                title: Text('التاريخ: ${DateFormat('yyyy-MM-dd').format(selectedDate)}'),
-                trailing: const Icon(Icons.calendar_today, color: Colors.blue),
-                onTap: () async {
-                  DateTime? picked = await showDatePicker(
-                    context: context, initialDate: selectedDate, firstDate: DateTime(2000), lastDate: DateTime(2100),
-                  );
-                  if (picked != null) setDialogState(() => selectedDate = picked);
-                },
+        title: const Text('إدارة المتجر الشاملة'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'بحث عام (في المخزن، الديون، والإيجار)...',
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
               ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
-            ElevatedButton(
-              onPressed: () {
-                if (nameController.text.isNotEmpty && amountController.text.isNotEmpty) {
-                  setState(() {
-                    debts.add({
-                      'name': nameController.text,
-                      'amount': double.tryParse(amountController.text) ?? 0.0,
-                      'date': selectedDate.toIso8601String(),
-                      'isReceived': false,
-                    });
-                  });
-                  _saveData();
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('حفظ'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ====================== 3. شاشة الإيجار ======================
-  Widget _buildRentsScreen() {
-    return Scaffold(
-      body: rents.isEmpty
-          ? const Center(child: Text('لا توجد إيجارات مسجلة'))
-          : ListView.builder(
-              itemCount: rents.length,
-              itemBuilder: (context, index) {
-                final rent = rents[index];
-                DateTime date = DateTime.parse(rent['date']);
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  child: ListTile(
-                    title: Text(rent['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text(
-                      DateFormat('yyyy-MM-dd').format(date),
-                      style: TextStyle(
-                        color: rent['isDelivered'] ? Colors.red : Colors.blue,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('${rent['amount']} د.ع', style: const TextStyle(fontSize: 16)),
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.grey),
-                          onPressed: () => _editName(rents, index, 'اسم المستأجر'),
-                        ),
-                        Checkbox(
-                          value: rent['isDelivered'],
-                          onChanged: (val) {
-                            setState(() => rent['isDelivered'] = val);
-                            _saveData();
-                          },
-                        )
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addRent,
-        backgroundColor: Colors.purple,
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
-
-  void _addRent() {
-    TextEditingController nameController = TextEditingController();
-    TextEditingController amountController = TextEditingController();
-    List<String> existingNames = rents.map((e) => e['name'].toString()).toSet().toList();
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('إضافة إيجار جديد'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Autocomplete<String>(
-                optionsBuilder: (TextEditingValue textEditingValue) {
-                  if (textEditingValue.text.isEmpty) return const Iterable<String>.empty();
-                  return existingNames.where((String option) => option.contains(textEditingValue.text));
-                },
-                onSelected: (String selection) => nameController.text = selection,
-                fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                  nameController = controller;
-                  return TextField(
-                    controller: controller, focusNode: focusNode,
-                    decoration: const InputDecoration(labelText: 'اسم المستأجر (اكتب للبحث)'),
-                  );
-                },
-              ),
-              TextField(controller: amountController, decoration: const InputDecoration(labelText: 'المبلغ'), keyboardType: TextInputType.number),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
-          ElevatedButton(
-            onPressed: () {
-              if (nameController.text.isNotEmpty && amountController.text.isNotEmpty) {
+              onChanged: (val) {
                 setState(() {
-                  rents.add({
-                    'name': nameController.text,
-                    'amount': double.tryParse(amountController.text) ?? 0.0,
-                    'date': DateTime.now().toIso8601String(),
-                    'isDelivered': false,
-                  });
+                  globalSearchQuery = val.trim();
                 });
-                _saveData();
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('حفظ'),
+              },
+            ),
           ),
+        ),
+      ),
+      body: globalSearchQuery.isNotEmpty
+          ? GlobalSearchResults(query: globalSearchQuery)
+          : _screens[_currentIndex],
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (index) {
+          setState(() {
+            _currentIndex = index;
+            globalSearchQuery = '';
+          });
+        },
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.inventory), label: 'المخزن'),
+          NavigationDestination(icon: Icon(Icons.money), label: 'الديون'),
+          NavigationDestination(icon: Icon(Icons.car_rental), label: 'الإيجار'),
+          NavigationDestination(icon: Icon(Icons.settings), label: 'الإعدادات'),
         ],
       ),
     );
   }
+}
 
-  // ====================== 4. شاشة المخزن ======================
-  Widget _buildInventoryScreen() {
-    return Scaffold(
-      body: inventory.isEmpty
-          ? const Center(child: Text('المخزن فارغ'))
-          : ListView.builder(
-              itemCount: inventory.length,
-              itemBuilder: (context, index) {
-                final item = inventory[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  child: ListTile(
-                    title: Text(item['name']),
-                    subtitle: item['category'] != null ? Text('القسم: ${item['category']}') : null,
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '${item['price']} د.ع',
-                          style: TextStyle(color: Color(item['color']), fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.grey),
-                          onPressed: () => _editName(inventory, index, 'اسم الصنف'),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addInventoryItem,
-        backgroundColor: Colors.green,
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
+// ---------------- GLOBAL SEARCH RESULTS ----------------
+class GlobalSearchResults extends StatelessWidget {
+  final String query;
+  const GlobalSearchResults({super.key, required this.query});
 
-  void _addInventoryItem() {
-    TextEditingController nameController = TextEditingController();
-    TextEditingController priceController = TextEditingController();
-    String? selectedCategory;
-    Color selectedColor = globalPriceColor;
+  @override
+  Widget build(BuildContext context) {
+    final store = Provider.of<StoreData>(context);
+    final matchedItems = store.items.where((e) => e.name.contains(query) || e.section.contains(query)).toList();
+    final matchedDebts = store.debts.where((e) => e.name.contains(query)).toList();
+    final matchedRents = store.rents.where((e) => e.name.contains(query)).toList();
 
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('إضافة صنف جديد'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(controller: nameController, decoration: const InputDecoration(labelText: 'اسم الصنف')),
-                TextField(controller: priceController, decoration: const InputDecoration(labelText: 'السعر'), keyboardType: TextInputType.number),
-                const SizedBox(height: 10),
-                DropdownButtonFormField<String>(
-                  value: selectedCategory,
-                  hint: const Text('اختر القسم (اختياري)'),
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text('بدون قسم')),
-                    ...categories.map((c) => DropdownMenuItem(value: c, child: Text(c))),
-                  ],
-                  onChanged: (val) => setDialogState(() => selectedCategory = val),
-                ),
-                const SizedBox(height: 15),
-                Row(
-                  children: [
-                    const Text('لون السعر: '),
-                    GestureDetector(
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('اختر اللون'),
-                            content: SingleChildScrollView(
-                              child: ColorPicker(
-                                pickerColor: selectedColor,
-                                onColorChanged: (color) => setDialogState(() => selectedColor = color),
-                              ),
-                            ),
-                            actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('تم'))],
-                          ),
-                        );
-                      },
-                      child: Container(width: 30, height: 30, color: selectedColor, decoration: BoxDecoration(border: Border.all())),
-                    )
-                  ],
-                )
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
-            ElevatedButton(
-              onPressed: () {
-                if (nameController.text.isNotEmpty && priceController.text.isNotEmpty) {
-                  setState(() {
-                    inventory.add({
-                      'name': nameController.text,
-                      'price': double.tryParse(priceController.text) ?? 0.0,
-                      'category': selectedCategory,
-                      'color': selectedColor.value,
-                    });
-                  });
-                  _saveData();
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('حفظ'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ====================== 5. شاشة الإعدادات ======================
-  Widget _buildSettingsScreen() {
     return ListView(
+      padding: const EdgeInsets.all(12),
       children: [
-        SwitchListTile(
-          title: const Text('الحفظ التلقائي'),
-          subtitle: const Text('حفظ البيانات تلقائياً عند كل تعديل'),
-          value: autoBackup,
-          onChanged: (val) {
-            setState(() => autoBackup = val);
-            _saveData();
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.category, color: Colors.blue),
-          title: const Text('إدارة الأقسام (للمخزن)'),
-          onTap: _manageCategories,
-        ),
+        Text('نتائج البحث عن: "$query"', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const Divider(),
-        ListTile(
-          leading: const Icon(Icons.qr_code, color: Colors.green),
-          title: const Text('إنشاء نسخة احتياطية (باركود)'),
-          subtitle: const Text('امسحه من هاتف آخر لاستعادة البيانات'),
-          onTap: _showBackupQR,
-        ),
-        ListTile(
-          leading: const Icon(Icons.share, color: Colors.purple),
-          title: const Text('مشاركة قاعدة البيانات'),
-          onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('يتطلب إضافة مكتبة share_plus للهاتف'))),
-        ),
+        const Text('المخزن:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+        ...matchedItems.map((e) => ListTile(title: Text(e.name), subtitle: Text('السعر: ${e.price} \vert{} القسم: ${e.section}'))),
+        const Divider(),
+        const Text('الديون:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+        ...matchedDebts.map((e) => ListTile(title: Text(e.name), subtitle: Text('المبلغ: ${e.amount} \vert{} التاريخ: ${e.date}'))),
+        const Divider(),
+        const Text('الإيجار:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.indigo)),
+        ...matchedRents.map((e) => ListTile(title: Text(e.name), subtitle: Text('المبلغ: ${e.amount} \vert{} التاريخ: ${e.date}'))),
       ],
     );
   }
+}
 
-  void _manageCategories() {
-    TextEditingController catController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('الأقسام'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Wrap(
-                spacing: 8,
-                children: categories.map((c) => Chip(
-                  label: Text(c),
-                  onDeleted: () {
-                    setDialogState(() => categories.remove(c));
-                    setState(() {});
-                    _saveData();
-                  },
-                )).toList(),
-              ),
-              TextField(controller: catController, decoration: const InputDecoration(labelText: 'قسم جديد...')),
-            ],
+// ---------------- 1. INVENTORY SCREEN ----------------
+class InventoryScreen extends StatefulWidget {
+  const InventoryScreen({super.key});
+
+  @override
+  State<InventoryScreen> createState() => _InventoryScreenState();
+}
+
+class _InventoryScreenState extends State<InventoryScreen> {
+  String searchQuery = '';
+  String? selectedSectionFilter;
+
+  @override
+  Widget build(BuildContext context) {
+    final store = Provider.of<StoreData>(context);
+    
+    var filteredItems = store.items.where((item) {
+      final matchesSearch = item.name.contains(searchQuery) || item.section.contains(searchQuery);
+      final matchesSection = selectedSectionFilter == null || selectedSectionFilter == 'الكل' || item.section == selectedSectionFilter;
+      return matchesSearch && matchesSection;
+    }).toList();
+
+    return Scaffold(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    decoration: const InputDecoration(labelText: 'بحث في المخزن...', prefixIcon: Icon(Icons.search), border: OutlineInputBorder()),
+                    onChanged: (val) => setState(() => searchQuery = val),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                DropdownButton<String>(
+                  value: selectedSectionFilter,
+                  hint: const Text('كل الأقسام'),
+                  items: ['الكل', ...store.customSections].map((sec) => DropdownMenuItem(value: sec, child: Text(sec))).toList(),
+                  onChanged: (val) => setState(() => selectedSectionFilter = val),
+                ),
+              ],
+            ),
           ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('إغلاق')),
-            ElevatedButton(
-              onPressed: () {
-                if (catController.text.isNotEmpty) {
-                  setDialogState(() => categories.add(catController.text));
-                  setState(() {});
-                  _saveData();
-                  catController.clear();
-                }
+          Expanded(
+            child: ListView.builder(
+              itemCount: filteredItems.length,
+              itemBuilder: (context, index) {
+                final item = filteredItems[index];
+                Color priceColor = Colors.blue;
+                if (item.priceColor == 'red') priceColor = Colors.red;
+                if (item.priceColor == 'green') priceColor = Colors.green;
+                if (item.priceColor == 'orange') priceColor = Colors.orange;
+
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: ListTile(
+                    leading: item.imagePath != null && File(item.imagePath!).existsSync()
+                        ? Image.file(File(item.imagePath!), width: 50, height: 50, fit: BoxFit.cover)
+                        : const Icon(Icons.inventory_2, size: 40),
+                    title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text('القسم: ${item.section.isEmpty ? "بدون قسم" : item.section} \vert{} الكمية: ${item.quantity}'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('${item.price}', style: TextStyle(color: priceColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.blue),
+                          onPressed: () => _showItemDialog(context, store, item: item),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => store.removeItem(item.id),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
               },
-              child: const Text('إضافة'),
-            )
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showBackupQR() {
-    Map<String, dynamic> backupData = {
-      'debts': debts, 'rents': rents, 'inventory': inventory, 'categories': categories,
-    };
-    String jsonString = jsonEncode(backupData);
-    // ضغط البيانات لتناسب حجم الباركود
-    String base64Data = base64Encode(utf8.encode(jsonString));
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('امسح الباركود'),
-        content: SizedBox(
-          width: 250, height: 250,
-          child: QrImageView(data: base64Data, version: QrVersions.auto, size: 250.0),
-        ),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('إغلاق'))],
-      ),
-    );
-  }
-
-  // دوال مساعدة
-  void _editName(List<Map<String, dynamic>> list, int index, String label) {
-    TextEditingController controller = TextEditingController(text: list[index]['name']);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('تعديل $label'),
-        content: TextField(controller: controller),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
-          ElevatedButton(
-            onPressed: () {
-              setState(() => list[index]['name'] = controller.text);
-              _saveData();
-              Navigator.pop(context);
-            },
-            child: const Text('حفظ'),
+            ),
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showItemDialog(context, store),
+        child: const Icon(Icons.add),
+      ),
     );
   }
 
-  void _showGlobalSearch(BuildContext context) {
-    showSearch(context: context, delegate: GlobalSearchDelegate(debts: debts, rents: rents, inventory: inventory));
-  }
-}
+  void _showItemDialog(BuildContext context, StoreData store, {StoreItem? item}) {
+    final nameController = TextEditingController(text: item?.name ?? '');
+    final priceController = TextEditingController(text: item?.price.toString() ?? '');
+    final qtyController = TextEditingController(text: item?.quantity.toString() ?? '1');
+    String selectedSection = item?.section ?? (store.customSections.isNotEmpty ? store.customSections.first : '');
+    String selectedColor = item?.priceColor ?? 'blue';
+    String? imagePath = item?.imagePath;
 
-// ====================== كلاس البحث العام ======================
-class GlobalSearchDelegate extends SearchDelegate {
-  final List<Map<String, dynamic>> debts, rents, inventory;
-  GlobalSearchDelegate({required this.debts, required this.rents, required this.inventory});
-
-  @override
-  List<Widget> buildActions(BuildContext context) => [IconButton(icon: const Icon(Icons.clear), onPressed: () => query = '')];
-
-  @override
-  Widget buildLeading(BuildContext context) => IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => close(context, null));
-
-  @override
-  Widget buildResults(BuildContext context) {
-    List<Map<String, dynamic>> results = [];
-    debts.where((d) => d['name'].toString().toLowerCase().contains(query.toLowerCase())).forEach((d) => results.add({...d, 'type': 'دين', 'icon': Icons.money}));
-    rents.where((r) => r['name'].toString().toLowerCase().contains(query.toLowerCase())).forEach((r) => results.add({...r, 'type': 'إيجار', 'icon': Icons.house}));
-    inventory.where((i) => i['name'].toString().toLowerCase().contains(query.toLowerCase())).forEach((i) => results.add({...i, 'type': 'مخزن', 'icon': Icons.inventory}));
-
-    if (results.isEmpty) return const Center(child: Text('لا توجد نتائج مطابقة'));
-
-    return ListView.builder(
-      itemCount: results.length,
-      itemBuilder: (context, index) {
-        final item = results[index];
-        return ListTile(
-          leading: Icon(item['icon'], color: Colors.blue),
-          title: Text(item['name']),
-          subtitle: Text(item['type']),
-        );
-      },
-    );
-  }
-
-  @override
-  Widget buildSuggestions(BuildContext context) => buildResults(context);
-}
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) => AlertDialog(
+          title: Text(item == null ? 'إضافة صنف جديد' : 'ت
