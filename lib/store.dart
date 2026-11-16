@@ -93,7 +93,7 @@ class ActiveRental {
   String customerName;
   String phone;
   String note;
-  String date; // ISO format or formatted string
+  String date;
   bool isReturned;
   String? imagePath;
 
@@ -159,9 +159,8 @@ class StoreData extends ChangeNotifier {
   List<StoreItem> items = [];
   List<String> customSections = ['كهربائيات', 'إنشائيات', 'أخرى'];
   
-  // إعدادات التطبيق
   bool autoBackup = true;
-  String backupMode = 'manual'; // manual, drive_reminder, auto_local
+  String backupMode = 'manual';
   String storeName = 'محل الكهربائيات والإنشائيات';
   String storePhone = '';
   String storeAddress = '';
@@ -179,159 +178,4 @@ class StoreData extends ChangeNotifier {
     final dStr = prefs.getString('debts_v2');
     if (dStr != null) debts = (jsonDecode(dStr) as List).map((e) => CustomerDebt.fromJson(e)).toList();
     
-    final eqStr = prefs.getString('equipments');
-    if (eqStr != null) equipments = (jsonDecode(eqStr) as List).map((e) => RentalEquipment.fromJson(e)).toList();
-
-    final rStr = prefs.getString('rents_v2');
-    if (rStr != null) rents = (jsonDecode(rStr) as List).map((e) => ActiveRental.fromJson(e)).toList();
-
-    final iStr = prefs.getString('items');
-    if (iStr != null) items = (jsonDecode(iStr) as List).map((e) => StoreItem.fromJson(e)).toList();
-
-    final sStr = prefs.getString('customSections');
-    if (sStr != null) customSections = List<String>.from(jsonDecode(sStr));
-
-    autoBackup = prefs.getBool('autoBackup') ?? true;
-    backupMode = prefs.getString('backupMode') ?? 'manual';
-    storeName = prefs.getString('storeName') ?? 'محل الكهربائيات والإنشائيات';
-    storePhone = prefs.getString('storePhone') ?? '';
-    storeAddress = prefs.getString('storeAddress') ?? '';
-    invoiceFooter = prefs.getString('invoiceFooter') ?? 'شكراً لتعاملكم معنا';
-    currencySymbol = prefs.getString('currencySymbol') ?? 'د.ع';
-    primaryColorName = prefs.getString('primaryColorName') ?? 'amber';
-    minRentalDays = prefs.getInt('minRentalDays') ?? 1;
-    notifyListeners();
-  }
-
-  Future<void> saveData() async {
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setString('debts_v2', jsonEncode(debts.map((e) => e.toJson()).toList()));
-    prefs.setString('equipments', jsonEncode(equipments.map((e) => e.toJson()).toList()));
-    prefs.setString('rents_v2', jsonEncode(rents.map((e) => e.toJson()).toList()));
-    prefs.setString('items', jsonEncode(items.map((e) => e.toJson()).toList()));
-    prefs.setString('customSections', jsonEncode(customSections));
-    prefs.setBool('autoBackup', autoBackup);
-    prefs.setString('backupMode', backupMode);
-    prefs.setString('storeName', storeName);
-    prefs.setString('storePhone', storePhone);
-    prefs.setString('storeAddress', storeAddress);
-    prefs.setString('invoiceFooter', invoiceFooter);
-    prefs.setString('currencySymbol', currencySymbol);
-    prefs.setString('primaryColorName', primaryColorName);
-    prefs.setInt('minRentalDays', minRentalDays);
-    notifyListeners();
-  }
-
-  String exportToJson() => jsonEncode({
-        'debts': debts.map((e) => e.toJson()).toList(),
-        'rents': rents.map((e) => e.toJson()).toList(),
-        'items': items.map((e) => e.toJson()).toList(),
-        'customSections': customSections,
-        'storeName': storeName,
-      });
-
-  bool importFromJson(String jsonStr) {
-    try {
-      final data = jsonDecode(jsonStr);
-      if (data['debts'] != null) debts = (data['debts'] as List).map((e) => CustomerDebt.fromJson(e)).toList();
-      if (data['rents'] != null) rents = (data['rents'] as List).map((e) => ActiveRental.fromJson(e)).toList();
-      if (data['items'] != null) items = (data['items'] as List).map((e) => StoreItem.fromJson(e)).toList();
-      if (data['customSections'] != null) customSections = List<String>.from(data['customSections']);
-      if (data['storeName'] != null) storeName = data['storeName'];
-      saveData();
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  void addCustomerDebt(CustomerDebt c) {
-    debts.add(c);
-    if (autoBackup) saveData(); else notifyListeners();
-  }
-
-  void addTransactionToCustomer(String customerId, double amount, bool isPayment, String note) {
-    int idx = debts.indexWhere((e) => e.id == customerId);
-    if (idx != -1) {
-      final trans = DebtTransaction(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        amount: amount,
-        date: DateTime.now().toString().substring(0, 16),
-        isPayment: isPayment,
-        note: note,
-      );
-      debts[idx].transactions.insert(0, trans);
-      if (autoBackup) saveData(); else notifyListeners();
-    }
-  }
-
-  void updateCustomerInfo(String customerId, String name, String phone, String? imagePath) {
-    int idx = debts.indexWhere((e) => e.id == customerId);
-    if (idx != -1) {
-      debts[idx].name = name;
-      debts[idx].phone = phone;
-      if (imagePath != null) debits[idx].imagePath = imagePath; // fixed typo internally if any
-      if (autoBackup) saveData(); else notifyListeners();
-    }
-  }
-
-  void removeCustomerDebt(String customerId) {
-    debts.removeWhere((e) => e.id == customerId);
-    if (autoBackup) saveData(); else notifyListeners();
-  }
-
-  void addActiveRental(ActiveRental r) {
-    rents.insert(0, r); // لإظهار الجديد في الأعلى
-    int eqIdx = equipments.indexWhere((e) => e.name == r.equipmentName);
-    if (eqIdx != -1) {
-      equipments[eqIdx].availableCount -= r.count;
-      if (equipments[eqIdx].availableCount < 0) equipments[eqIdx].availableCount = 0;
-    }
-    if (autoBackup) saveData(); else notifyListeners();
-  }
-
-  void returnRental(String id) {
-    int idx = rents.indexWhere((e) => e.id == id);
-    if (idx != -1) {
-      rents[idx].isReturned = true;
-      int eqIdx = equipments.indexWhere((e) => e.name == rents[idx].equipmentName);
-      if (eqIdx != -1) {
-        equipments[eqIdx].availableCount += rents[idx].count;
-        if (equipments[eqIdx].availableCount > equipments[eqIdx].totalCount) {
-          equipments[eqIdx].availableCount = equipments[eqIdx].totalCount;
-        }
-      }
-      if (autoBackup) saveData(); else notifyListeners();
-    }
-  }
-
-  void addItem(StoreItem item) {
-    items.add(item);
-    if (autoBackup) saveData(); else notifyListeners();
-  }
-
-  void updateItem(StoreItem item) {
-    int idx = items.indexWhere((e) => e.id == item.id);
-    if (idx != -1) {
-      items[idx] = item;
-      if (autoBackup) saveData(); else notifyListeners();
-    }
-  }
-
-  void removeItem(String id) {
-    items.removeWhere((e) => e.id == id);
-    if (autoBackup) saveData(); else notifyListeners();
-  }
-
-  void addSection(String s) {
-    if (!customSections.contains(s)) {
-      customSections.add(s);
-      if (autoBackup) saveData(); else notifyListeners();
-    }
-  }
-
-  void removeSection(String s) {
-    customSections.remove(s);
-    if (autoBackup) saveData(); else notifyListeners();
-  }
-}
+    final eqStr = prefs.
