@@ -43,7 +43,7 @@ class StoreItem {
   String name;
   double price;
   int quantity;
-  String section; // اختياري
+  String section; // اختياري (مثل قسم 5)
   String? imagePath;
   String priceColor; // لون السعر
 
@@ -112,27 +112,27 @@ class StoreData extends ChangeNotifier {
     } catch (e) { return false; }
   }
 
-  void addDebt(DebtItem d) { debts.add(d); saveData(); }
+  void addDebt(DebtItem d) { debts.add(d); if (autoBackup) saveData(); else notifyListeners(); }
   void updateDebt(String id, String name, double amount, String date, bool isPaid) {
     int idx = debts.indexWhere((e) => e.id == id);
-    if (idx != -1) { debts[idx] = DebtItem(id: id, name: name, amount: amount, date: date, isPaid: isPaid); saveData(); }
+    if (idx != -1) { debts[idx] = DebtItem(id: id, name: name, amount: amount, date: date, isPaid: isPaid); if (autoBackup) saveData(); else notifyListeners(); }
   }
-  void removeDebt(String id) { debts.removeWhere((e) => e.id == id); saveData(); }
+  void removeDebt(String id) { debts.removeWhere((e) => e.id == id); if (autoBackup) saveData(); else notifyListeners(); }
 
-  void addRent(RentItem r) { rents.add(r); saveData(); }
+  void addRent(RentItem r) { rents.add(r); if (autoBackup) saveData(); else notifyListeners(); }
   void updateRent(String id, String name, double amount, String date, bool isReturned) {
     int idx = rents.indexWhere((e) => e.id == id);
-    if (idx != -1) { rents[idx] = RentItem(id: id, name: name, amount: amount, date: date, isReturned: isReturned); saveData(); }
+    if (idx != -1) { rents[idx] = RentItem(id: id, name: name, amount: amount, date: date, isReturned: isReturned); if (autoBackup) saveData(); else notifyListeners(); }
   }
-  void removeRent(String id) { rents.removeWhere((e) => e.id == id); saveData(); }
+  void removeRent(String id) { rents.removeWhere((e) => e.id == id); if (autoBackup) saveData(); else notifyListeners(); }
 
-  void addItem(StoreItem item) { items.add(item); saveData(); }
+  void addItem(StoreItem item) { items.add(item); if (autoBackup) saveData(); else notifyListeners(); }
   void updateItem(StoreItem item) {
     int idx = items.indexWhere((e) => e.id == item.id);
-    if (idx != -1) { items[idx] = item; saveData(); }
+    if (idx != -1) { items[idx] = item; if (autoBackup) saveData(); else notifyListeners(); }
   }
-  void removeItem(String id) { items.removeWhere((e) => e.id == id); saveData(); }
+  void removeItem(String id) { items.removeWhere((e) => e.id == id); if (autoBackup) saveData(); else notifyListeners(); }
 
-  void addSection(String s) { if (!customSections.contains(s)) { customSections.add(s); saveData(); } }
-  void removeSection(String s) { customSections.remove(s); saveData(); }
+  void addSection(String s) { if (!customSections.contains(s)) { customSections.add(s); if (autoBackup) saveData(); else notifyListeners(); } }
+  void removeSection(String s) { customSections.remove(s); if (autoBackup) saveData(); else notifyListeners(); }
 }
