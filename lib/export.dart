@@ -2,58 +2,45 @@ import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:share_plus/share_plus.dart';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 import 'store.dart';
 
 class QRBackupScreen extends StatelessWidget {
   final StoreData storeData;
   const QRBackupScreen({super.key, required this.storeData});
 
-  Future<void> _shareFile(BuildContext context) async {
-    try {
-      final jsonStr = storeData.exportToJson();
-      final directory = await getTemporaryDirectory();
-      final file = File('${directory.path}/store_backup_${DateTime.now().millisecondsSinceEpoch}.json');
-      await file.writeAsString(jsonStr);
-      await Share.shareXFiles([XFile(file.path)], text: 'نسخة احتياطية لقاعدة بيانات المحل (Google Drive / Email)');
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('خطأ في مشاركة الملف: $e')));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final jsonString = storeData.exportToJson();
+    String jsonData = storeData.exportToJson();
     return Scaffold(
-      appBar: AppBar(title: const Text('النسخ الاحتياطي والمزامنة السحابية')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            const Text('باركود المزامنة السريعة بين الهواتف:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            Expanded(
-              child: Center(
-                child: SingleChildScrollView(
-                  child: QrImageView(data: jsonString, version: QrVersions.auto, size: 220.0, backgroundColor: Colors.white),
+      appBar: AppBar(title: const Text('النسخ الاحتياطي عبر الباركود')),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('امسح الرمز باستخدام جهاز آخر لاستعادة البيانات أو احتفظ به كنسخة احتياطية', textAlign: TextAlign.center, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)]),
+                child: QrImageView(
+                  data: jsonData,
+                  version: QrVersions.auto,
+                  size: 250.0,
                 ),
               ),
-            ),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-              icon: const Icon(Icons.share),
-              label: const Text('مشاركة عبر Google Drive أو الإيميل أو واتساب'),
-              onPressed: () => _shareFile(context),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50), backgroundColor: Colors.teal, foregroundColor: Colors.white),
-              icon: const Icon(Icons.camera_alt),
-              label: const Text('قراءة باركود لاستعادة البيانات'),
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => QRScanScreen(storeData: storeData))),
-            ),
-          ],
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+                icon: const Icon(Icons.share),
+                label: const Text('مشاركة بيانات النسخ الاحتياطي كنص'),
+                onPressed: () {
+                  Share.share(jsonData);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -70,22 +57,24 @@ class QRScanScreen extends StatefulWidget {
 
 class _QRScanScreenState extends State<QRScanScreen> {
   bool scanned = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('مسح الباركود للاستعادة')),
+      appBar: AppBar(title: const Text('مسح باركود الاستعادة')),
       body: MobileScanner(
+        controller: MobileScannerController(detectionSpeed: DetectionSpeed.noDuplicates),
         onDetect: (capture) {
           if (scanned) return;
-          for (final barcode in capture.barcodes) {
+          final List<Barcode> barcodes = capture.barcodes;
+          for (final barcode in barcodes) {
             if (barcode.rawValue != null) {
               scanned = true;
               bool success = widget.storeData.importFromJson(barcode.rawValue!);
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(success ? 'تمت استعادة البيانات بنجاح وتزامنت!' : 'فشل قراءة الباركود')));
-                Navigator.pop(context);
-                Navigator.pop(context);
-              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(success ? 'تم استعادة البيانات بنجاح!' : 'فشل قراءة البيانات من الباركود')),
+              );
+              Navigator.pop(context);
               break;
             }
           }
