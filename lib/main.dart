@@ -39,16 +39,17 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // الترتيب من اليمين لليسار: 0: التقارير، 1: الإيجار، 2: الديون، 3: المخزن، 4: بيع
-  int _currentIndex = 3; 
+  // الترتيب من اليمين لليسار بناءً على طلبك:
+  // 0: بيع، 1: المخزن، 2: الديون، 3: الإيجار، 4: التقارير
+  int _currentIndex = 3; // افتراضياً الإيجار بناءً على الصور
   String globalSearch = '';
 
   final List<Widget> _screens = [
-    const ReportsScreen(),
-    const RentsScreen(),
-    const DebtsScreen(),
-    const InventoryScreen(),
     const SalesScreen(),
+    const InventoryScreen(),
+    const DebtsScreen(),
+    const RentsScreen(),
+    const ReportsScreen(),
   ];
 
   @override
@@ -85,10 +86,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Expanded(
                         child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade100, foregroundColor: Colors.green.shade900),
-                          icon: const Icon(Icons.add, size: 18),
-                          label: const Text('صنف'),
-                          onPressed: () => setState(() => _currentIndex = 3),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue.shade100, foregroundColor: Colors.blue.shade900),
+                          icon: const Icon(Icons.person_add, size: 18),
+                          label: const Text('دين جديد'),
+                          onPressed: () => setState(() => _currentIndex = 2),
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -96,17 +97,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(backgroundColor: Colors.teal.shade100, foregroundColor: Colors.teal.shade900),
                           icon: const Icon(Icons.store, size: 18),
-                          label: const Text('إيجار'),
-                          onPressed: () => setState(() => _currentIndex = 1),
+                          label: const Text('إيجار جديد'),
+                          onPressed: () => setState(() => _currentIndex = 3),
                         ),
                       ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue.shade100, foregroundColor: Colors.blue.shade900),
-                          icon: const Icon(Icons.person_add, size: 18),
-                          label: const Text('دين'),
-                          onPressed: () => setState(() => _currentIndex = 2),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade100, foregroundColor: Colors.green.shade900),
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('إضافة صنف'),
+                          onPressed: () => setState(() => _currentIndex = 1),
                         ),
                       ),
                     ],
@@ -138,11 +139,11 @@ class _HomeScreenState extends State<HomeScreen> {
         type: BottomNavigationBarType.fixed,
         onTap: (i) => setState(() { _currentIndex = i; globalSearch = ''; }),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'التقارير'),
-          BottomNavigationBarItem(icon: Icon(Icons.handyman), label: 'الإيجار'),
-          BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet), label: 'الديون'),
-          BottomNavigationBarItem(icon: Icon(Icons.inventory_2), label: 'المخزن'),
           BottomNavigationBarItem(icon: Icon(Icons.point_of_sale), label: 'بيع'),
+          BottomNavigationBarItem(icon: Icon(Icons.inventory_2), label: 'المخزن'),
+          BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet), label: 'الديون'),
+          BottomNavigationBarItem(icon: Icon(Icons.handyman), label: 'الإيجار'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'التقارير'),
         ],
       ),
     );
@@ -158,7 +159,7 @@ class GlobalSearchResults extends StatelessWidget {
     final store = Provider.of<StoreData>(context);
     final items = store.items.where((e) => e.name.contains(query) || e.section.contains(query)).toList();
     final debts = store.debts.where((e) => e.name.contains(query) || e.phone.contains(query)).toList();
-    final rents = store.rents.where((e) => e.name.contains(query) || e.date.contains(query)).toList();
+    final rents = store.rents.where((e) => e.customerName.contains(query) || e.equipmentName.contains(query)).toList();
 
     return ListView(
       padding: const EdgeInsets.all(12),
@@ -172,13 +173,13 @@ class GlobalSearchResults extends StatelessWidget {
         ...debts.map((e) => ListTile(title: Text(e.name), subtitle: Text('المتبقي: ${e.remainingBalance} د.ع'))),
         const Divider(),
         const Text('الإيجار:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber)),
-        ...rents.map((e) => ListTile(title: Text(e.name), subtitle: Text('المبلغ: ${e.amount} | التاريخ: ${e.date}'))),
+        ...rents.map((e) => ListTile(title: Text(e.customerName), subtitle: Text('المعدة: ${e.equipmentName} | العدد: ${e.count}'))),
       ],
     );
   }
 }
 
-// 1. قسم المخزن
+// 1. شاشة المخزن والأقسام غير المحدودة
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
   @override
@@ -273,7 +274,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 TextField(controller: qtyC, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'الكمية المتوفرة')),
                 DropdownButtonFormField<String>(
                   value: store.customSections.contains(sec) ? sec : null,
-                  decoration: const InputDecoration(labelText: 'القسم (اختياري)'),
+                  decoration: const InputDecoration(labelText: 'القسم (اختياري، مثلاً: قسم 5)'),
                   items: store.customSections.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
                   onChanged: (v) => setD(() => sec = v ?? ''),
                 ),
@@ -326,7 +327,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 }
 
-// 2. قسم الديون (قائمة العملاء)
+// 2. شاشة الديون (مطابقة تماماً للصور المطلوبة)
 class DebtsScreen extends StatefulWidget {
   const DebtsScreen({super.key});
   @override
@@ -417,40 +418,61 @@ class _DebtsScreenState extends State<DebtsScreen> {
     );
   }
 
+  // نافذة تسجيل دين جديد مطابقة لصورة 569764.jpg
   void _showAddCustomerDialog(BuildContext context, StoreData store) {
     final nameC = TextEditingController();
-    final phoneC = TextEditingController();
     final amountC = TextEditingController();
+    final noteC = TextEditingController();
+    final phoneC = TextEditingController();
     String? imgPath;
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setD) => AlertDialog(
-          title: const Text('إضافة عميل دين جديد'),
+          title: const Text('تسجيل دين جديد'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(controller: nameC, decoration: const InputDecoration(labelText: 'اسم العميل')),
+                TextField(controller: amountC, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'المبلغ')),
+                TextField(controller: noteC, decoration: const InputDecoration(labelText: 'ملاحظة')),
                 TextField(controller: phoneC, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقم الهاتف')),
-                TextField(controller: amountC, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'المبلغ الابتدائي (دين جديد)')),
                 const SizedBox(height: 10),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.camera_alt),
-                  label: const Text('صورة الهوية / العميل'),
-                  onPressed: () async {
-                    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-                    if (picked != null) setD(() => imgPath = picked.path);
-                  },
+                const Text('صورة الهوية / البطاقة', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 5),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.amber.shade100, foregroundColor: Colors.amber.shade900),
+                      icon: const Icon(Icons.photo, size: 16),
+                      label: const Text('المعرض'),
+                      onPressed: () async {
+                        final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+                        if (picked != null) setD(() => imgPath = picked.path);
+                      },
+                    ),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.amber.shade100, foregroundColor: Colors.amber.shade900),
+                      icon: const Icon(Icons.camera_alt, size: 16),
+                      label: const Text('كاميرا'),
+                      onPressed: () async {
+                        final picked = await ImagePicker().pickImage(source: ImageSource.camera);
+                        if (picked != null) setD(() => imgPath = picked.path);
+                      },
+                    ),
+                  ],
                 ),
-                if (imgPath != null) Image.file(File(imgPath!), height: 60, width: 60, fit: BoxFit.cover),
+                if (imgPath != null) Padding(padding: const EdgeInsets.only(top: 8.0), child: Image.file(File(imgPath!), height: 60, width: 60, fit: BoxFit.cover)),
               ],
             ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
               onPressed: () {
                 if (nameC.text.isEmpty) return;
                 double initialAmount = double.tryParse(amountC.text) ?? 0.0;
@@ -466,7 +488,7 @@ class _DebtsScreenState extends State<DebtsScreen> {
                             amount: initialAmount,
                             date: DateTime.now().toString().substring(0, 16),
                             isPayment: false,
-                            note: 'الدين الابتدائي',
+                            note: noteC.text.isEmpty ? 'الدين الابتدائي' : noteC.text,
                           )
                         ]
                       : [],
@@ -474,7 +496,7 @@ class _DebtsScreenState extends State<DebtsScreen> {
                 store.addCustomerDebt(newCustomer);
                 Navigator.pop(context);
               },
-              child: const Text('حفظ'),
+              child: const Text('تسجيل الدين'),
             ),
           ],
         ),
@@ -483,7 +505,7 @@ class _DebtsScreenState extends State<DebtsScreen> {
   }
 }
 
-// 3. شاشة تفاصيل الدين للعميل (مطابقة تماماً للصورة المطلوبة)
+// شاشة تفاصيل الدين للعميل (مطابقة تماماً لصورة 569765.jpg)
 class CustomerDebtDetailScreen extends StatefulWidget {
   final String customerId;
   const CustomerDebtDetailScreen({super.key, required this.customerId});
@@ -521,7 +543,6 @@ class _CustomerDebtDetailScreenState extends State<CustomerDebtDetailScreen> {
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
-          // بطاقة رقم الهاتف وتعديل الهاتف والصورة
           Card(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
@@ -546,7 +567,6 @@ class _CustomerDebtDetailScreenState extends State<CustomerDebtDetailScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          // بطاقة المتبقي
           Card(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: Padding(
@@ -561,7 +581,6 @@ class _CustomerDebtDetailScreenState extends State<CustomerDebtDetailScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          // حقل المبلغ
           TextField(
             controller: amountC,
             keyboardType: TextInputType.number,
@@ -573,7 +592,6 @@ class _CustomerDebtDetailScreenState extends State<CustomerDebtDetailScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          // حقل الملاحظة
           TextField(
             controller: noteC,
             decoration: InputDecoration(
@@ -584,7 +602,6 @@ class _CustomerDebtDetailScreenState extends State<CustomerDebtDetailScreen> {
             ),
           ),
           const SizedBox(height: 15),
-          // أزرار دين جديد / استلام دفعة
           Row(
             children: [
               Expanded(
@@ -633,33 +650,19 @@ class _CustomerDebtDetailScreenState extends State<CustomerDebtDetailScreen> {
             ],
           ),
           const SizedBox(height: 20),
-          // مشاركة كشف الحساب
           const Text('مشاركة كشف الحساب مع العميل', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              OutlinedButton.icon(
-                icon: const Icon(Icons.share, color: Colors.amber),
-                label: const Text('نص'),
-                onPressed: () {},
-              ),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.table_chart, color: Colors.amber),
-                label: const Text('Excel'),
-                onPressed: () {},
-              ),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.picture_as_pdf, color: Colors.amber),
-                label: const Text('PDF'),
-                onPressed: () {},
-              ),
+              OutlinedButton.icon(icon: const Icon(Icons.share, color: Colors.amber), label: const Text('نص'), onPressed: () {}),
+              OutlinedButton.icon(icon: const Icon(Icons.table_chart, color: Colors.amber), label: const Text('Excel'), onPressed: () {}),
+              OutlinedButton.icon(icon: const Icon(Icons.picture_as_pdf, color: Colors.amber), label: const Text('PDF'), onPressed: () {}),
             ],
           ),
           const Divider(height: 30),
           const Text('الحركات', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 10),
-          // قائمة الحركات
           ...customer.transactions.map((t) {
             return Card(
               margin: const EdgeInsets.symmetric(vertical: 4),
@@ -719,65 +722,196 @@ class _CustomerDebtDetailScreenState extends State<CustomerDebtDetailScreen> {
   }
 }
 
-// 4. قسم الإيجار
-class RentsScreen extends StatelessWidget {
+// 3. شاشة الإيجارات والمعدات (مطابقة للصور 569762.jpg و 569761.jpg)
+class RentsScreen extends StatefulWidget {
   const RentsScreen({super.key});
+  @override
+  State<RentsScreen> createState() => _RentsScreenState();
+}
+
+class _RentsScreenState extends State<RentsScreen> {
+  String search = '';
+
   @override
   Widget build(BuildContext context) {
     final store = Provider.of<StoreData>(context);
-    double totalRents = store.rents.fold(0.0, (s, e) => s + e.amount);
-    int renterCount = store.rents.map((e) => e.name).toSet().length;
+    int activeRentsCount = store.rents.where((e) => !e.isReturned).length;
 
     return Scaffold(
-      body: Column(
+      body: ListView(
+        padding: const EdgeInsets.all(12),
         children: [
-          Card(
-            margin: const EdgeInsets.all(12),
-            color: Colors.teal.shade700,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('إجمالي الإيجارات', style: TextStyle(color: Colors.white.withOpacity(0.7))),
-                      Text('$totalRents د.ع', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                  Column(
-                    children: [
-                      Text('المؤجرون', style: TextStyle(color: Colors.white.withOpacity(0.7))),
-                      Text('$renterCount', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: store.rents.length,
-              itemBuilder: (context, index) {
-                final r = store.rents[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  child: ListTile(
-                    title: Text(r.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('المبلغ: ${r.amount} د.ع\nالتاريخ: ${r.date}'),
-                    trailing: Switch(
-                      value: r.isReturned,
-                      activeColor: Colors.red,
-                      onChanged: (v) => store.updateRent(r.id, r.name, r.phone, r.amount, r.date, v),
+          Row(
+            children: [
+              Expanded(
+                child: Card(
+                  color: Colors.teal.shade700,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('قيد الإيجار', style: TextStyle(color: Colors.white70)),
+                        Text('$activeRentsCount', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                      ],
                     ),
                   ),
-                );
-              },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  icon: const Icon(Icons.add),
+                  label: const Text('إيجار جديد', style: TextStyle(fontSize: 16)),
+                  onPressed: () => _showNewRentalDialog(context, store),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 15),
+          const Text('المعدات المتاحة', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 8),
+          ...store.equipments.map((eq) {
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: ListTile(
+                title: Text(eq.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text('${eq.pricePerDay} د.ع / يوم'),
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(color: Colors.green.shade100, borderRadius: BorderRadius.circular(8)),
+                  child: Text('متاح ${eq.availableCount} من ${eq.totalCount}', style: TextStyle(color: Colors.green.shade900, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            );
+          }),
+          const Divider(height: 30),
+          const Text('سجل الإيجارات والنشاطات', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 8),
+          TextField(
+            decoration: InputDecoration(
+              labelText: 'ابحث باسم العميل أو رقم الهاتف...',
+              prefixIcon: const Icon(Icons.search),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            onChanged: (v) => setState(() => search = v),
+          ),
+          const SizedBox(height: 8),
+          ...store.rents.where((r) => r.customerName.contains(search) || r.phone.contains(search)).map((r) {
+            return Card(
+              margin: const EdgeInsets.symmetric(vertical: 4),
+              child: ListTile(
+                title: Text('${r.customerName} (${r.equipmentName})', style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text('العدد: ${r.count} | الهاتف: ${r.phone}\nالتاريخ: ${r.date}'),
+                trailing: r.isReturned
+                    ? const Text('تم التسليم', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))
+                    : ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                        onPressed: () => store.returnRental(r.id),
+                        child: const Text('تسليم'),
+                      ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  // نافذة إيجار جديد مطابقة تماماً لصورة 569761.jpg
+  void _showNewRentalDialog(BuildContext context, StoreData store) {
+    RentalEquipment? selectedEq = store.equipments.isNotEmpty ? store.equipments.first : null;
+    final countC = TextEditingController(text: '1');
+    final nameC = TextEditingController();
+    final phoneC = TextEditingController();
+    final noteC = TextEditingController();
+    String? imgPath;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setD) => AlertDialog(
+          title: const Text('إيجار جديد'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<RentalEquipment>(
+                  value: selectedEq,
+                  decoration: const InputDecoration(labelText: 'المعدة'),
+                  items: store.equipments.map((eq) => DropdownMenuItem(value: eq, child: Text('${eq.name} (متاح ${eq.availableCount})'))).toList(),
+                  onChanged: (v) => setD(() => selectedEq = v),
+                ),
+                TextField(controller: countC, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'العدد')),
+                TextField(controller: nameC, decoration: const InputDecoration(labelText: 'اسم المستأجر')),
+                TextField(controller: phoneC, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقم هاتف المستأجر')),
+                TextField(controller: noteC, decoration: const InputDecoration(labelText: 'ملاحظات')),
+                const SizedBox(height: 10),
+                const Text('صورة الهوية / البطاقة', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 5),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.amber.shade100, foregroundColor: Colors.amber.shade900),
+                      icon: const Icon(Icons.photo, size: 16),
+                      label: const Text('المعرض'),
+                      onPressed: () async {
+                        final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+                        if (picked != null) setD(() => imgPath = picked.path);
+                      },
+                    ),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.amber.shade100, foregroundColor: Colors.amber.shade900),
+                      icon: const Icon(Icons.camera_alt, size: 16),
+                      label: const Text('كاميرا'),
+                      onPressed: () async {
+                        final picked = await ImagePicker().pickImage(source: ImageSource.camera);
+                        if (picked != null) setD(() => imgPath = picked.path);
+                      },
+                    ),
+                  ],
+                ),
+                if (imgPath != null) Padding(padding: const EdgeInsets.only(top: 8.0), child: Image.file(File(imgPath!), height: 60, width: 60, fit: BoxFit.cover)),
+              ],
             ),
           ),
-        ],
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+              onPressed: () {
+                if (selectedEq == null || nameC.text.isEmpty) return;
+                int count = int.tryParse(countC.text) ?? 1;
+                if (count > selectedEq!.availableCount) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('العدد المطلوب غير متوفر حالياً!')));
+                  return;
+                }
+                store.addActiveRental(ActiveRental(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  equipmentName: selectedEq!.name,
+                  count: count,
+                  customerName: nameC.text,
+                  phone: phoneC.text,
+                  note: noteC.text,
+                  date: DateTime.now().toString().substring(0, 16),
+                  isReturned: false,
+                  imagePath: imgPath,
+                ));
+                Navigator.pop(context);
+              },
+              child: const Text('تأكيد الإيجار'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -805,7 +939,7 @@ class SalesScreen extends StatelessWidget {
   }
 }
 
-// 5. شاشة الإعدادات والتحكم الشامل
+// 4. شاشة الإعدادات والتحكم الشامل
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -850,15 +984,10 @@ class SettingsScreen extends StatelessWidget {
             value: store.autoBackup,
             onChanged: (v) { store.autoBackup = v; store.saveData(); },
           ),
-          SwitchListTile(
-            title: const Text('مزامنة تلقائية مع Google Drive'),
-            value: store.driveAutoSync,
-            onChanged: (v) { store.driveAutoSync = v; store.saveData(); },
-          ),
           ListTile(
             leading: const Icon(Icons.qr_code, color: Colors.amber),
-            title: const Text('مشاركة واستعادة النسخة عبر الباركود أو Drive'),
-            subtitle: const Text('توليد وقراءة باركود أو مشاركة ملف النسخة'),
+            title: const Text('مشاركة واستعادة النسخة عبر الباركود أو الملف'),
+            subtitle: const Text('توليد وقراءة باركود أو مشاركة عبر واتساب/Drive'),
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => QRBackupScreen(storeData: store))),
           ),
           const Divider(),
