@@ -31,114 +31,70 @@ class StoreApp extends StatelessWidget {
   }
 }
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
-
+// 1. شاشة البيع
+class SalesScreen extends StatelessWidget {
+  const SalesScreen({super.key});
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: Text('شاشة نقطة البيع السريع', style: TextStyle(fontSize: 18))));
+  }
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 3; 
-  String globalSearch = '';
+// 2. شاشة المخزن
+class InventoryScreen extends StatefulWidget {
+  const InventoryScreen({super.key});
+  @override
+  State<InventoryScreen> createState() => _InventoryScreenState();
+}
 
-  final List<Widget> _screens = const [
-    SalesScreen(),
-    InventoryScreen(),
-    DebtsScreen(),
-    RentsScreen(),
-    ReportsScreen(),
-  ];
+class _InventoryScreenState extends State<InventoryScreen> {
+  String search = '';
+  String? sectionFilter;
 
   @override
   Widget build(BuildContext context) {
     final store = Provider.of<StoreData>(context);
+    final filtered = store.items.where((i) {
+      bool mSearch = i.name.contains(search) || i.section.contains(search);
+      bool mSec = sectionFilter == null || sectionFilter == 'الكل' || i.section == sectionFilter;
+      return mSearch && mSec;
+    }).toList();
 
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(175),
-        child: AppBar(
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [Theme.of(context).primaryColor, Colors.brown], begin: Alignment.topRight, end: Alignment.bottomLeft),
-            ),
-          ),
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.settings, color: Colors.white),
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
-              ),
-              Text(store.storeName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
-              const SizedBox(width: 40),
-            ],
-          ),
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(115),
-            child: Column(
+      body: Column(
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.all(8),
+            child: Row(
               children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue.shade100, foregroundColor: Colors.blue.shade900),
-                          icon: const Icon(Icons.person_add, size: 18),
-                          label: const Text('دين جديد'),
-                          onPressed: () => setState(() => _currentIndex = 2),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.teal.shade100, foregroundColor: Colors.teal.shade900),
-                          icon: const Icon(Icons.store, size: 18),
-                          label: const Text('إيجار جديد'),
-                          onPressed: () => setState(() => _currentIndex = 3),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade100, foregroundColor: Colors.green.shade900),
-                          icon: const Icon(Icons.add, size: 18),
-                          label: const Text('إضافة صنف'),
-                          onPressed: () => setState(() => _currentIndex = 1),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      hintText: 'بحث عام في المخزن، الديون، الإيجار...',
-                      prefixIcon: const Icon(Icons.search),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                    ),
-                    onChanged: (v) => setState(() => globalSearch = v.trim()),
-                  ),
-                ),
+                ChoiceChip(label: const Text('الكل'), selected: sectionFilter == null || sectionFilter == 'الكل', onSelected: (_) => setState(() => sectionFilter = 'الكل')),
+                ...store.customSections.map((sec) => Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: ChoiceChip(label: Text(sec), selected: sectionFilter == sec, onSelected: (_) => setState(() => sectionFilter = sec)),
+                )),
               ],
             ),
           ),
-        ),
-      ),
-      body: globalSearch.isNotEmpty ? GlobalSearchResults(query: globalSearch) : _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        selectedItemColor: Theme.of(context).primaryColor,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        onTap: (i) => setState(() { _currentIndex = i; globalSearch = ''; }),
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.point_of_sale), label: 'بيع'),
-          BottomNavigationBarItem(icon: Icon(Icons.inventory_2), label: 'المخزن'),
-          BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet), label: 'الديون'),
-          BottomNavigationBarItem(icon: Icon(Icons.handyman), label: 'الإيجار'),
-          BottomNavigationBar
+          Expanded(
+            child: ListView.builder(
+              itemCount: filtered.length,
+              itemBuilder: (context, index) {
+                final item = filtered[index];
+                Color pColor = Colors.blue;
+                if (item.priceColor == 'red') pColor = Colors.red;
+                if (item.priceColor == 'green') pColor = Colors.green;
+                if (item.priceColor == 'orange') pColor = Colors.orange;
+
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: ListTile(
+                    leading: item.imagePath != null && File(item.imagePath!).existsSync()
+                        ? Image.file(File(item.imagePath!), width: 50, height: 50, fit: BoxFit.cover)
+                        : const Icon(Icons.inventory_2, color: Colors.amber, size: 40),
+                    title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text('القسم: ${item.section.isEmpty ? "عام" : item.section} \vert{} المتوفر: ${item.quantity}'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('${formatCurrency(item.price)}${store.currencySymbol}', style: TextStyle(color: pColor, fontWeight: FontWeight.bold, fontSize: 
