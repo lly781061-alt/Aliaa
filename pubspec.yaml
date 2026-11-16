@@ -1,3 +1,24 @@
+{
+  "categories": ["التحديث والرفع"],
+  "items": [
+    { "id": "1", "label": "إجراء نسخة احتياطية على Google Drive", "category": "التحديث والرفع", "checked": true },
+    { "id": "2", "label": "تحديث pubspec.yaml والتحقق من التبعيات", "category": "التحديث والرفع", "checked": false },
+    { "id": "3", "label": "تحديث ملف lib/store.dart", "category": "التحديث والرفع", "checked": false },
+    { "id": "4", "label": "إنشاء ورفع ملف lib/export.dart الجديد", "category": "التحديث والرفع", "checked": false },
+    { "id": "5", "label": "تحديث lib/main.dart والتأكد من الأقواس الختامية", "category": "التحديث والرفع", "checked": false },
+    { "id": "6", "label": "تحديث .github/workflows/build.yml", "category": "التحديث والرفع", "checked": false },
+    { "id": "7", "label": "انتظار اكتمال بناء APK في Actions وتحميله", "category": "التحديث والرفع", "checked": false },
+    { "id": "8", "label": "تثبيت النسخة الجديدة واستعادة البيانات", "category": "التحديث والرفع", "checked": false }
+  ]
+}
+```eof
+
+---
+
+### ثانياً: ملفات المشروع الكاملة
+
+#### 1. ملف `pubspec.yaml`
+```yaml
 name: store_app
 description: A comprehensive store management app.
 publish_to: 'none'
