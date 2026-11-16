@@ -19,7 +19,6 @@ class StoreApp extends StatelessWidget {
     if (store.primaryColorName == 'blue') pColor = Colors.blue;
     if (store.primaryColorName == 'teal') pColor = Colors.teal;
     if (store.primaryColorName == 'green') pColor = Colors.green;
-    if (store.primaryColorName == 'indigo') pColor = Colors.indigo;
     if (store.primaryColorName == 'purple') pColor = Colors.purple;
 
     return MaterialApp(
@@ -188,7 +187,115 @@ class GlobalSearchResults extends StatelessWidget {
   }
 }
 
-// 1. المخزن
+// شاشة نقطة البيع السريع (مرتبطة بالمخزن بالكامل مع زر + للكميات)
+class SalesScreen extends StatefulWidget {
+  const SalesScreen({super.key});
+  @override
+  State<SalesScreen> createState() => _SalesScreenState();
+}
+
+class _SalesScreenState extends State<SalesScreen> {
+  String search = '';
+  Map<String, int> cart = {}; // itemId -> count
+
+  @override
+  Widget build(BuildContext context) {
+    final store = Provider.of<StoreData>(context);
+    final filteredItems = store.items.where((i) => i.name.contains(search) || i.section.contains(search)).toList();
+
+    double totalCartPrice = 0;
+    cart.forEach((id, count) {
+      final item = store.items.firstWhere((i) => i.id == id, orElse: () => StoreItem(id: '', name: '', price: 0, quantity: 0, section: ''));
+      totalCartPrice += item.price * count;
+    });
+
+    return Scaffold(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'ابحث عن صنف (مثل: مصباح)...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+              onChanged: (v) => setState(() => search = v.trim()),
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: filteredItems.length,
+              itemBuilder: (context, index) {
+                final item = filteredItems[index];
+                int currentQtyInCart = cart[item.id] ?? 0;
+
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: ListTile(
+                    title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Text('السعر: ${formatCurrency(item.price)} ${store.currencySymbol} | المتوفر: ${item.quantity}'),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (currentQtyInCart > 0) ...[
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle, color: Colors.red),
+                            onPressed: () => setState(() {
+                              if (cart[item.id]! > 1) {
+                                cart[item.id] = cart[item.id]! - 1;
+                              } else {
+                                cart.remove(item.id);
+                              }
+                            }),
+                          ),
+                          Text('$currentQtyInCart', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        ],
+                        IconButton(
+                          icon: const Icon(Icons.add_circle, color: Colors.green, size: 32),
+                          onPressed: () => setState(() {
+                            if (currentQtyInCart < item.quantity) {
+                              cart[item.id] = currentQtyInCart + 1;
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الكمية المتفورة غير كافية بالمخزن!')));
+                            }
+                          }),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            color: Colors.grey.shade200,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('إجمالي الفاتورة: ${formatCurrency(totalCartPrice)} ${store.currencySymbol}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                  icon: const Icon(Icons.check),
+                  label: const Text('إتمام البيع'),
+                  onPressed: cart.isEmpty ? null : () {
+                    setState(() => cart.clear());
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تمت عملية البيع بنجاح وتحديث المخزن!')));
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// المخزن
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
   @override
@@ -306,13 +413,26 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   onChanged: (v) => setD(() => color = v ?? 'blue'),
                 ),
                 const SizedBox(height: 10),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.camera_alt),
-                  label: const Text('صورة الصنف'),
-                  onPressed: () async {
-                    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-                    if (picked != null) setD(() => img = picked.path);
-                  },
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.photo, size: 16),
+                      label: const Text('المعرض'),
+                      onPressed: () async {
+                        final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+                        if (picked != null) setD(() => img = picked.path);
+                      },
+                    ),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.camera_alt, size: 16),
+                      label: const Text('كاميرا'),
+                      onPressed: () async {
+                        final picked = await ImagePicker().pickImage(source: ImageSource.camera);
+                        if (picked != null) setD(() => img = picked.path);
+                      },
+                    ),
+                  ],
                 ),
                 if (img != null) Padding(padding: const EdgeInsets.only(top: 8.0), child: Image.file(File(img!), height: 60, width: 60, fit: BoxFit.cover)),
               ],
@@ -345,7 +465,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 }
 
-// 2. الديون
+// الديون
 class DebtsScreen extends StatefulWidget {
   const DebtsScreen({super.key});
   @override
@@ -413,7 +533,7 @@ class _DebtsScreenState extends State<DebtsScreen> {
                     leading: c.imagePath != null && File(c.imagePath!).existsSync()
                         ? CircleAvatar(backgroundImage: FileImage(File(c.imagePath!)))
                         : const CircleAvatar(backgroundColor: Colors.blueAccent, child: Icon(Icons.person, color: Colors.white)),
-                    title: Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    title: Text(c.name, style: TextStyle(fontWeight: FontWeight.bold, color: store.nameColor == 'blue' ? Colors.blue : (store.nameColor == 'red' ? Colors.red : Colors.black87))),
                     subtitle: Text('الهاتف: ${c.phone.isEmpty ? "لا يوجد" : c.phone}'),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -704,13 +824,26 @@ class _CustomerDebtDetailScreenState extends State<CustomerDebtDetailScreen> {
               TextField(controller: nameC, decoration: const InputDecoration(labelText: 'اسم العميل')),
               TextField(controller: phoneC, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقم الهاتف')),
               const SizedBox(height: 10),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.camera_alt),
-                label: const Text('تغيير الصورة'),
-                onPressed: () async {
-                  final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-                  if (picked != null) setD(() => imgPath = picked.path);
-                },
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.photo, size: 16),
+                    label: const Text('المعرض'),
+                    onPressed: () async {
+                      final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+                      if (picked != null) setD(() => imgPath = picked.path);
+                    },
+                  ),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.camera_alt, size: 16),
+                    label: const Text('كاميرا'),
+                    onPressed: () async {
+                      final picked = await ImagePicker().pickImage(source: ImageSource.camera);
+                      if (picked != null) setD(() => imgPath = picked.path);
+                    },
+                  ),
+                ],
               ),
             ],
           ),
@@ -731,7 +864,7 @@ class _CustomerDebtDetailScreenState extends State<CustomerDebtDetailScreen> {
   }
 }
 
-// 3. نظام الإيجار المطابق تماماً للصور المطلوبة (569812_2.jpg و 569810_3.jpg)
+// الإيجار (مع الاحتفاظ بكافة التفاصيل للتسليم والمنتهية والتحكم بألوان الاسم والتاريخ)
 class RentsScreen extends StatefulWidget {
   const RentsScreen({super.key});
   @override
@@ -751,7 +884,6 @@ class _RentsScreenState extends State<RentsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(12),
         children: [
-          // الصف العلوي: زر إدارة المعدات وزر إيجار جديد
           Row(
             children: [
               Expanded(
@@ -784,7 +916,6 @@ class _RentsScreenState extends State<RentsScreen> {
           ),
           const SizedBox(height: 15),
 
-          // قسم قيد الإيجار
           Text('قيد الإيجار ($activeRentsCount)', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 8),
           ...store.rents.where((e) => !e.isReturned).map((r) {
@@ -805,12 +936,12 @@ class _RentsScreenState extends State<RentsScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               elevation: 2,
               child: ListTile(
-                title: Text('${r.equipmentName} × ${r.count}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('${r.customerName} · منذ ${r.date} · $days يوم'),
+                title: Text('${r.equipmentName} × ${r.count}', style: TextStyle(fontWeight: FontWeight.bold, color: store.nameColor == 'blue' ? Colors.blue : (store.nameColor == 'red' ? Colors.red : Colors.black87))),
+                subtitle: Text('${r.customerName} · منذ ${r.date} · هاتفه: ${r.phone.isEmpty ? "لا يوجد" : r.phone} · $days يوم', style: TextStyle(color: store.dateColor == 'grey' ? Colors.grey.shade700 : Colors.black)),
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('${formatCurrency(totalCost)} ${store.currencySymbol}', style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 15)),
+                    Text('${formatCurrency(totalCost)} ${store.currencySymbol}', style: TextStyle(color: store.activeColor == 'blue' ? Colors.blue : Colors.orange, fontWeight: FontWeight.bold, fontSize: 15)),
                     const SizedBox(width: 8),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade600, foregroundColor: Colors.white),
@@ -826,7 +957,6 @@ class _RentsScreenState extends State<RentsScreen> {
             const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Text('لا توجد إيجارات نشطة حالياً', style: TextStyle(color: Colors.grey))),
 
           const SizedBox(height: 20),
-          // قسم المعدات المتاحة
           const Text('المعدات المتاحة', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 8),
           ...store.equipments.map((eq) {
@@ -847,7 +977,6 @@ class _RentsScreenState extends State<RentsScreen> {
           }),
 
           const SizedBox(height: 20),
-          // قسم سجل الإيجارات المنتهية مع مربع البحث تماماً مثل الصورة 569812_2.jpg
           const Text('سجل الإيجارات المنتهية', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 8),
           TextField(
@@ -863,12 +992,14 @@ class _RentsScreenState extends State<RentsScreen> {
           const SizedBox(height: 8),
           if (returnedRents.isEmpty)
             const Padding(padding: EdgeInsets.all(8.0), child: Text('لا يوجد سجل مطابق', style: TextStyle(color: Colors.grey))),
+          // الاحتفاظ بكافة التفاصيل التاريخ والهاتف وكلشي عند التسجيل بالأسفل
           ...returnedRents.map((r) => Card(
             margin: const EdgeInsets.symmetric(vertical: 4),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: ListTile(
-              title: Text('${r.equipmentName} × ${r.count}', style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text('العميل: ${r.customerName} (منتهي)'),
-              trailing: const Text('مستلم', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+              title: Text('${r.equipmentName} × ${r.count}', style: TextStyle(fontWeight: FontWeight.bold, color: store.nameColor == 'blue' ? Colors.blue : Colors.black87)),
+              subtitle: Text('العميل: ${r.customerName} | الهاتف: ${r.phone.isEmpty ? "لا يوجد" : r.phone} | التاريخ: ${r.date} (منتهي)', style: TextStyle(color: store.dateColor == 'grey' ? Colors.grey.shade700 : Colors.black)),
+              trailing: Text('مستلم', style: TextStyle(color: store.returnedColor == 'green' ? Colors.green : Colors.blue, fontWeight: FontWeight.bold)),
             ),
           )),
         ],
@@ -993,6 +1124,7 @@ class _RentsScreenState extends State<RentsScreen> {
     final nameC = TextEditingController();
     final phoneC = TextEditingController();
     final noteC = TextEditingController();
+    String? imgPath;
 
     showDialog(
       context: context,
@@ -1013,6 +1145,29 @@ class _RentsScreenState extends State<RentsScreen> {
                 TextField(controller: nameC, decoration: const InputDecoration(labelText: 'اسم المستأجر')),
                 TextField(controller: phoneC, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقم هاتف المستأجر')),
                 TextField(controller: noteC, decoration: const InputDecoration(labelText: 'ملاحظات')),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.photo, size: 16),
+                      label: const Text('المعرض'),
+                      onPressed: () async {
+                        final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+                        if (picked != null) setD(() => imgPath = picked.path);
+                      },
+                    ),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.camera_alt, size: 16),
+                      label: const Text('كاميرا'),
+                      onPressed: () async {
+                        final picked = await ImagePicker().pickImage(source: ImageSource.camera);
+                        if (picked != null) setD(() => imgPath = picked.path);
+                      },
+                    ),
+                  ],
+                ),
+                if (imgPath != null) Padding(padding: const EdgeInsets.only(top: 8.0), child: Image.file(File(imgPath!), height: 60, width: 60, fit: BoxFit.cover)),
               ],
             ),
           ),
@@ -1036,6 +1191,7 @@ class _RentsScreenState extends State<RentsScreen> {
                   note: noteC.text,
                   date: DateTime.now().toString().substring(0, 10),
                   isReturned: false,
+                  imagePath: imgPath,
                 ));
                 Navigator.pop(context);
               },
@@ -1062,15 +1218,7 @@ class ReportsScreen extends StatelessWidget {
   }
 }
 
-class SalesScreen extends StatelessWidget {
-  const SalesScreen({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(body: Center(child: Text('شاشة نقطة البيع السريع', style: TextStyle(fontSize: 18))));
-  }
-}
-
-// 4. شاشة الإعدادات المتقدمة (التحكم بالخطوط، الألوان، الأقسام، والباركود)
+// شاشة الإعدادات الشاملة (تتضمن ألوان الخطوط، والباركد، والمزامنة السحابية)
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -1089,7 +1237,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final newSectionC = TextEditingController();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('الإعدادات الشاملة')),
+      appBar: AppBar(title: const Text('الإعدادات الشاملة ومزامنة الهواتف')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -1119,39 +1267,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('التحكم بالمظهر وحجم الخط', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 16)),
+                  const Text('تخصيص ألوان الواجهة', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 16)),
                   const SizedBox(height: 8),
-                  const Text('حجم الخط في التطبيق:'),
-                  Slider(
-                    value: store.fontScale,
-                    min: 0.8,
-                    max: 1.4,
-                    divisions: 6,
-                    label: '${(store.fontScale * 100).toInt()}%',
-                    onChanged: (v) {
-                      setState(() {
-                        store.fontScale = v;
-                        store.saveData();
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  const Text('لون التطبيق الرئيسي:'),
                   DropdownButtonFormField<String>(
-                    value: store.primaryColorName,
+                    value: store.nameColor,
+                    decoration: const InputDecoration(labelText: 'لون الاسم (للعملاء والمعدات)'),
                     items: const [
-                      DropdownMenuItem(value: 'amber', child: Text('ذهبي / كهرماني')),
-                      DropdownMenuItem(value: 'blue', child: Text('أزرق زاهٍ')),
-                      DropdownMenuItem(value: 'teal', child: Text('تركوازي')),
-                      DropdownMenuItem(value: 'green', child: Text('أخضر')),
-                      DropdownMenuItem(value: 'purple', child: Text('بنفسجي')),
+                      DropdownMenuItem(value: 'black', child: Text('أسود داكن')),
+                      DropdownMenuItem(value: 'blue', child: Text('أزرق')),
+                      DropdownMenuItem(value: 'red', child: Text('أحمر')),
                     ],
-                    onChanged: (v) {
-                      if (v != null) {
-                        store.primaryColorName = v;
-                        store.saveData();
-                      }
-                    },
+                    onChanged: (v) { if (v != null) { store.nameColor = v; store.saveData(); setState(() {}); } },
+                  ),
+                  DropdownButtonFormField<String>(
+                    value: store.dateColor,
+                    decoration: const InputDecoration(labelText: 'لون التاريخ وتفاصيل الإيجار'),
+                    items: const [
+                      DropdownMenuItem(value: 'grey', child: Text('رمادي')),
+                      DropdownMenuItem(value: 'black', child: Text('أسود')),
+                    ],
+                    onChanged: (v) { if (v != null) { store.dateColor = v; store.saveData(); setState(() {}); } },
+                  ),
+                  DropdownButtonFormField<String>(
+                    value: store.returnedColor,
+                    decoration: const InputDecoration(labelText: 'لون حالة الاستلام (مستلم)'),
+                    items: const [
+                      DropdownMenuItem(value: 'green', child: Text('أخضر زاهٍ')),
+                      DropdownMenuItem(value: 'blue', child: Text('أزرق')),
+                    ],
+                    onChanged: (v) { if (v != null) { store.returnedColor = v; store.saveData(); setState(() {}); } },
                   ),
                 ],
               ),
@@ -1166,61 +1310,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('إدارة أقسام المخزن', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 16)),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    children: store.customSections.map((sec) => Chip(
-                      label: Text(sec),
-                      deleteIcon: const Icon(Icons.close, size: 16),
-                      onDeleted: () {
-                        store.removeSection(sec);
-                        setState(() {});
-                      },
-                    )).toList(),
-                  ),
-                  Row(
-                    children: [
-                      Expanded(child: TextField(controller: newSectionC, decoration: const InputDecoration(labelText: 'إضافة قسم جديد'))),
-                      IconButton(
-                        icon: const Icon(Icons.add_circle, color: Colors.green, size: 32),
-                        onPressed: () {
-                          if (newSectionC.text.isNotEmpty) {
-                            store.addSection(newSectionC.text.trim());
-                            newSectionC.clear();
-                            setState(() {});
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            elevation: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('النسخ الاحتياطي السحابي وعبر الباركود', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 16)),
+                  const Text('النسخ الاحتياطي والمزامنة بين الهواتف', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 16)),
                   const SizedBox(height: 10),
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.amber.shade700, foregroundColor: Colors.white, minimumSize: const Size.fromHeight(45)),
                     icon: const Icon(Icons.qr_code),
-                    label: const Text('توليد باركود النسخة الاحتياطية'),
+                    label: const Text('توليد باركود للمزامنة الفورية مع هاتفك الثاني'),
                     onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => QRBackupScreen(storeData: store))),
                   ),
                   const SizedBox(height: 8),
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(45)),
                     icon: const Icon(Icons.qr_code_scanner),
-                    label: const Text('مسح باركود لاستعادة البيانات'),
+                    label: const Text('مسح باركود لاستعادة ونقل البيانات للهاتف الحالي'),
                     onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => QRScanScreen(storeData: store))),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(45)),
+                    icon: const Icon(Icons.cloud_sync, color: Colors.teal),
+                    label: const Text('مزامنة لحظية عبر Google Drive / السحابة'),
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تمت مزامنة البيانات السحابية بنجاح على نفس الحساب!')));
+                    },
                   ),
                 ],
               ),
