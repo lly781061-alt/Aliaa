@@ -26,7 +26,7 @@ jobs:
           cache: true
 
       - name: Generate Modern Android Files
-        run: flutter create --platforms=android .
+        run: flutter create --project-name store_app --platforms=android .
 
       - name: Add Camera Permission for QR Scanner
         run: |
