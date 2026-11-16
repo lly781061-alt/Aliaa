@@ -32,7 +32,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 1; // الافتراضي المخزن
+  int _currentIndex = 3; // المخزن افتراضياً
   String globalSearch = '';
 
   final List<Widget> _screens = [
@@ -71,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
             preferredSize: const Size.fromHeight(115),
             child: Column(
               children: [
-                // الأزرار العلوية السريعة (إضافة صنف، إيجار جديد، دين جديد)
+                // أزرار الاختصارات السريعة أسفل البحث
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
                   child: Row(
@@ -87,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(width: 6),
                       Expanded(
                         child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue.shade100, foregroundColor: Colors.blue.shade900),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.teal.shade100, foregroundColor: Colors.teal.shade900),
                           icon: const Icon(Icons.store, size: 18),
                           label: const Text('إيجار جديد'),
                           onPressed: () => setState(() => _currentIndex = 1),
@@ -96,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       const SizedBox(width: 6),
                       Expanded(
                         child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.lightBlue.shade100, foregroundColor: Colors.indigo.shade900),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue.shade100, foregroundColor: Colors.blue.shade900),
                           icon: const Icon(Icons.person_add, size: 18),
                           label: const Text('دين جديد'),
                           onPressed: () => setState(() => _currentIndex = 2),
@@ -105,12 +105,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
                 ),
-                // شريط البحث العام
+                // خانة البحث الشامل
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: TextField(
                     decoration: InputDecoration(
-                      hintText: 'ابحث عن صنف أو زبون...',
+                      hintText: 'بحث عام (المخزن، الديون، الإيجارات)...',
                       prefixIcon: const Icon(Icons.search),
                       filled: true,
                       fillColor: Colors.white,
@@ -223,9 +223,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   child: ListTile(
                     leading: item.imagePath != null && File(item.imagePath!).existsSync()
                         ? Image.file(File(item.imagePath!), width: 50, height: 50, fit: BoxFit.cover)
-                        : const Icon(Icons.flash_on, color: Colors.orange, size: 40),
+                        : const Icon(Icons.inventory_2, color: Colors.amber, size: 40),
                     title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('${item.section.isEmpty ? "عام" : item.section} · المتوفر: ${item.quantity}'),
+                    subtitle: Text('القسم: ${item.section.isEmpty ? "عام" : item.section} | المتوفر: ${item.quantity}'),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -354,13 +354,15 @@ class _DebtsScreenState extends State<DebtsScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('إجمالي الديون المستحقة', style: TextStyle(color: Colors.white70)),
-                      Text('$totalDebts د.ع', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                      Text('إجمالي الديون المستحقة', style: TextStyle(color: Colors.white.withOpacity(0.7))),
+                      Text('$totalDebts د.ع', style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text('المستلم: $totalReceived د.ع', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13)),
                     ],
                   ),
                   Column(
                     children: [
-                      const Text('مدينون', style: TextStyle(color: Colors.white70)),
+                      Text('مدينون', style: TextStyle(color: Colors.white.withOpacity(0.7))),
                       Text('$debtorCount', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                     ],
                   ),
@@ -482,13 +484,13 @@ class _RentsScreenState extends State<RentsScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('إجمالي إيرادات الإيجار', style: TextStyle(color: Colors.white70)),
+                      Text('إجمالي إيرادات الإيجار', style: TextStyle(color: Colors.white.withOpacity(0.7))),
                       Text('$totalRents د.ع', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
                     ],
                   ),
                   Column(
                     children: [
-                      const Text('المؤجرون', style: TextStyle(color: Colors.white70)),
+                      Text('المؤجرون', style: TextStyle(color: Colors.white.withOpacity(0.7))),
                       Text('$renterCount', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                     ],
                   ),
