@@ -36,7 +36,8 @@ class CustomerDebt {
   String? imagePath;
   List<DebtTransaction> transactions;
 
-  CustomerDebt({required this.id, required this.name, required this.phone = '', this.imagePath, required this.transactions});
+  // تم تصحيح هنا: إزالة required من phone ليتوافق مع القيمة الافتراضية
+  CustomerDebt({required this.id, required this.name, this.phone = '', this.imagePath, required this.transactions});
 
   double get remainingBalance {
     double total = 0;
