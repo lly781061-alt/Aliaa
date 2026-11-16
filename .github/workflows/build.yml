@@ -32,6 +32,10 @@ jobs:
         run: |
           sed -i 's/<application/<uses-permission android:name="android.permission.CAMERA"\/>\n    <application/' android/app/src/main/AndroidManifest.xml
 
+      - name: Fix minSdk to 21 for mobile_scanner
+        run: |
+          sed -i 's/minSdkVersion.*/minSdkVersion 21/g' android/app/build.gradle
+
       - name: Install Dependencies
         run: flutter pub get
 
