@@ -261,3 +261,77 @@ class StoreData extends ChangeNotifier {
         note: note,
       );
       debts[idx].transactions.insert(0, trans);
+      if (autoBackup) saveData(); else notifyListeners();
+    }
+  }
+
+  void updateCustomerInfo(String customerId, String name, String phone, String? imagePath) {
+    int idx = debts.indexWhere((e) => e.id == customerId);
+    if (idx != -1) {
+      debts[idx].name = name;
+      debts[idx].phone = phone;
+      if (imagePath != null) debts[idx].imagePath = imagePath;
+      if (autoBackup) saveData(); else notifyListeners();
+    }
+  }
+
+  void removeCustomerDebt(String customerId) {
+    debts.removeWhere((e) => e.id == customerId);
+    if (autoBackup) saveData(); else notifyListeners();
+  }
+
+  void addActiveRental(ActiveRental r) {
+    rents.insert(0, r);
+    int eqIdx = equipments.indexWhere((e) => e.name == r.equipmentName);
+    if (eqIdx != -1) {
+      equipments[eqIdx].availableCount -= r.count;
+      if (equipments[eqIdx].availableCount < 0) equipments[eqIdx].availableCount = 0;
+    }
+    if (autoBackup) saveData(); else notifyListeners();
+  }
+
+  void returnRental(String id) {
+    int idx = rents.indexWhere((e) => e.id == id);
+    if (idx != -1) {
+      rents[idx].isReturned = true;
+      int eqIdx = equipments.indexWhere((e) => e.name == rents[idx].equipmentName);
+      if (eqIdx != -1) {
+        equipments[eqIdx].availableCount += rents[idx].count;
+        if (equipments[eqIdx].availableCount > equipments[eqIdx].totalCount) {
+          equipments[eqIdx].availableCount = equipments[eqIdx].totalCount;
+        }
+      }
+      if (autoBackup) saveData(); else notifyListeners();
+    }
+  }
+
+  void addItem(StoreItem item) {
+    items.add(item);
+    if (autoBackup) saveData(); else notifyListeners();
+  }
+
+  void updateItem(StoreItem item) {
+    int idx = items.indexWhere((e) => e.id == item.id);
+    if (idx != -1) {
+      items[idx] = item;
+      if (autoBackup) saveData(); else notifyListeners();
+    }
+  }
+
+  void removeItem(String id) {
+    items.removeWhere((e) => e.id == id);
+    if (autoBackup) saveData(); else notifyListeners();
+  }
+
+  void addSection(String s) {
+    if (!customSections.contains(s)) {
+      customSections.add(s);
+      if (autoBackup) saveData(); else notifyListeners();
+    }
+  }
+
+  void removeSection(String s) {
+    customSections.remove(s);
+    if (autoBackup) saveData(); else notifyListeners();
+  }
+}
