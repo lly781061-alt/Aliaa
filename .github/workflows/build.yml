@@ -21,18 +21,12 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.16.5'
+          flutter-version: '3.10.6'
           channel: 'stable'
           cache: true
 
       - name: Install Dependencies
         run: flutter pub get
-
-      - name: Upgrade Gradle Version
-        run: |
-          if [ -f "android/gradle/wrapper/gradle-wrapper.properties" ]; then
-            sed -i 's/distributionUrl=.*$/distributionUrl=https\\://services.gradle.org/distributions/gradle-8.0-bin.zip/g' android/gradle/wrapper/gradle-wrapper.properties
-          fi
 
       - name: Build APK
         run: flutter build apk --release
