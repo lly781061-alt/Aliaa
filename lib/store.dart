@@ -7,7 +7,7 @@ class DebtItem {
   String name;
   double amount;
   String date;
-  bool isPaid; // false = دين جديد (أزرق)، true = تسليم (أحمر)
+  bool isPaid; // false = دين جديد (أزرق)، true = استلام دفعة (أحمر)
   DebtItem({required this.id, required this.name, required this.amount, required this.date, required this.isPaid});
 
   Map<String, dynamic> toJson() => {'id': id, 'name': name, 'amount': amount, 'date': date, 'isPaid': isPaid};
@@ -43,7 +43,7 @@ class StoreItem {
   String name;
   double price;
   int quantity;
-  String section; // اختياري
+  String section; // اختيارية
   String? imagePath;
   String priceColor; // لون السعر
 
@@ -65,8 +65,9 @@ class StoreData extends ChangeNotifier {
   List<DebtItem> debts = [];
   List<RentItem> rents = [];
   List<StoreItem> items = [];
-  List<String> customSections = ['قسم 1', 'قسم 2', 'قسم 3', 'قسم 4', 'قسم 5'];
+  List<String> customSections = ['كهربائيات', 'إنشائيات', 'أخرى'];
   bool autoBackup = true;
+  String storeName = 'محل الكهربائيات والإنشائيات';
 
   StoreData() { loadData(); }
 
@@ -81,6 +82,7 @@ class StoreData extends ChangeNotifier {
     final sStr = prefs.getString('customSections');
     if (sStr != null) customSections = List<String>.from(jsonDecode(sStr));
     autoBackup = prefs.getBool('autoBackup') ?? true;
+    storeName = prefs.getString('storeName') ?? 'محل الكهربائيات والإنشائيات';
     notifyListeners();
   }
 
@@ -91,10 +93,11 @@ class StoreData extends ChangeNotifier {
     prefs.setString('items', jsonEncode(items.map((e) => e.toJson()).toList()));
     prefs.setString('customSections', jsonEncode(customSections));
     prefs.setBool('autoBackup', autoBackup);
+    prefs.setString('storeName', storeName);
     notifyListeners();
   }
 
-  String exportToJson() => jsonEncode({'debts': debts.map((e) => e.toJson()).toList(), 'rents': rents.map((e) => e.toJson()).toList(), 'items': items.map((e) => e.toJson()).toList(), 'customSections': customSections});
+  String exportToJson() => jsonEncode({'debts': debts.map((e) => e.toJson()).toList(), 'rents': rents.map((e) => e.toJson()).toList(), 'items': items.map((e) => e.toJson()).toList(), 'customSections': customSections, 'storeName': storeName});
 
   bool importFromJson(String jsonStr) {
     try {
@@ -103,6 +106,7 @@ class StoreData extends ChangeNotifier {
       if (data['rents'] != null) rents = (data['rents'] as List).map((e) => RentItem.fromJson(e)).toList();
       if (data['items'] != null) items = (data['items'] as List).map((e) => StoreItem.fromJson(e)).toList();
       if (data['customSections'] != null) customSections = List<String>.from(data['customSections']);
+      if (data['storeName'] != null) storeName = data['storeName'];
       saveData();
       return true;
     } catch (e) { return false; }
