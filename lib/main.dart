@@ -33,7 +33,7 @@ class StoreApp extends StatelessWidget {
 class StoreMainScreen extends StatefulWidget {
   const StoreMainScreen({super.key});
 
-  @override
+  @sbin
   State<StoreMainScreen> createState() => _StoreMainScreenState();
 }
 
@@ -48,73 +48,10 @@ class _StoreMainScreenState extends State<StoreMainScreen> {
     const ReportsScreen(),
   ];
 
-  // نافذة الإعدادات الشاملة ومزامنة الهواتف والنسخ الاحتياطي (المطابقة للصور)
-  void _showFullSettings(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'الإعدادات الشاملة ومزامنة الهواتف',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              // بيانات المحل
-              const Text('بيانات المحل', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-              const TextField(decoration: InputDecoration(labelText: 'اسم المحل', hintText: 'محل الكهربائيات والإنشائيات')),
-              const TextField(decoration: InputDecoration(labelText: 'رقم هاتف المحل')),
-              const TextField(decoration: InputDecoration(labelText: 'العنوان')),
-              const TextField(decoration: InputDecoration(labelText: 'العملة', hintText: 'د.ع')),
-              const SizedBox(height: 20),
-              // النسخ الاحتياطي والمزامنة بين الهواتف
-              const Text('النسخ الاحتياطي والمزامنة بين الهواتف', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
-              const SizedBox(height: 10),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.amber[700], foregroundColor: Colors.white),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('جاري توليد باركود للمزامنة الفورية مع الهاتف الثاني...')),
-                  );
-                },
-                icon: const Icon(Icons.qr_code),
-                label: const Text('توليد باركود للمزامنة الفورية مع الهاتف الثاني'),
-              ),
-              const SizedBox(height: 8),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey, foregroundColor: Colors.white),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('جاري فتح مسح الباركود لاستعادة البيانات...')),
-                  );
-                },
-                icon: const Icon(Icons.qr_code_scanner),
-                label: const Text('مسح باركود لاستعادة ونقل البيانات للهاتف الحالي'),
-              ),
-              const SizedBox(height: 8),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('جاري إتمام المزامنة اللحظية عبر Google Drive / السحابة...')),
-                  );
-                },
-                icon: const Icon(Icons.cloud_sync),
-                label: const Text('مزامنة لحظية عبر Google Drive / السحابة'),
-              ),
-            ],
-          ),
-        ),
-      ),
+  void _openSettings(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SettingsScreen()),
     );
   }
 
@@ -128,7 +65,7 @@ class _StoreMainScreenState extends State<StoreMainScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings, color: Colors.white),
-            onPressed: () => _showFullSettings(context),
+            onPressed: () => _openSettings(context),
           ),
         ],
       ),
@@ -155,7 +92,7 @@ class _StoreMainScreenState extends State<StoreMainScreen> {
   }
 }
 
-// 1. شاشة البيع
+// 1. شاشة البيع (مطابقة تماماً للصور)
 class SaleScreen extends StatelessWidget {
   const SaleScreen({super.key});
 
@@ -165,47 +102,58 @@ class SaleScreen extends StatelessWidget {
       padding: const EdgeInsets.all(12.0),
       child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.teal[50], foregroundColor: Colors.teal[800], elevation: 0),
-                  onPressed: () {},
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('إضافة صنف'),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [Color(0xFFE65100), Color(0xFFAB47BC)]),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.teal[800], elevation: 0),
+                        onPressed: () {},
+                        icon: const Icon(Icons.add, size: 18),
+                        label: const Text('إضافة صنف', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.blue[800], elevation: 0),
+                        onPressed: () {},
+                        icon: const Icon(Icons.handyman, size: 18),
+                        label: const Text('إيجار جديد', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.purple[800], elevation: 0),
+                        onPressed: () {},
+                        icon: const Icon(Icons.money, size: 18),
+                        label: const Text('دين جديد', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[50], foregroundColor: Colors.blue[800], elevation: 0),
-                  onPressed: () {},
-                  icon: const Icon(Icons.handyman, size: 18),
-                  label: const Text('إيجار جديد'),
+                const SizedBox(height: 12),
+                TextField(
+                  decoration: InputDecoration(
+                    hintText: 'بحث عام في المخزن، الديون، الإيجار...',
+                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.purple[50], foregroundColor: Colors.purple[800], elevation: 0),
-                  onPressed: () {},
-                  icon: const Icon(Icons.money, size: 18),
-                  label: const Text('دين جديد'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            decoration: InputDecoration(
-              hintText: 'بحث عام في المخزن، الديون، الإيجار...',
-              prefixIcon: const Icon(Icons.search, color: Colors.grey),
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              ],
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           TextField(
             decoration: InputDecoration(
               hintText: 'ابحث عن صنف (مثل: مصباح)...',
@@ -215,12 +163,21 @@ class SaleScreen extends StatelessWidget {
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
             ),
           ),
-          const SizedBox(height: 150),
-          const Center(
-            child: Text(
-              'إجمالي الفاتورة: 0 د.ع',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey),
-            ),
+          const SizedBox(height: 180),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[300], foregroundColor: Colors.black54),
+                onPressed: () {},
+                icon: const Icon(Icons.check),
+                label: const Text('إتمام البيع'),
+              ),
+              const Text(
+                'إجمالي الفاتورة: 0 د.ع',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
+              ),
+            ],
           ),
         ],
       ),
@@ -242,13 +199,20 @@ class InventoryScreen extends StatelessWidget {
             children: ['الكل', 'كهربائيات', 'إنشائيات', 'أخرى'].map((category) {
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: Chip(label: Text(category)),
+                child: Chip(
+                  label: Text(category),
+                  backgroundColor: category == 'الكل' ? Colors.orange[150] : Colors.white,
+                ),
               );
             }).toList(),
           ),
-          const Expanded(
-            child: Center(
-              child: Text('محتويات المخزن والأصناف', style: TextStyle(color: Colors.grey)),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: FloatingActionButton(
+              backgroundColor: Colors.teal,
+              onPressed: () {},
+              child: const Icon(Icons.add, color: Colors.white),
             ),
           ),
         ],
@@ -275,12 +239,28 @@ class DebtsScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: const [
                 Text('إجمالي الديون المستحقة\n100,000 د.ع', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                Text(
-                  'المديونون\n1',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
-                ),
+                Text('المديونون\n1', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
               ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            decoration: InputDecoration(
+              hintText: 'بحث عن عميل مدين...',
+              prefixIcon: const Icon(Icons.search, color: Colors.grey),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(backgroundColor: Colors.blue, child: Icon(Icons.person, color: Colors.white)),
+              title: const Text('علي عدنان', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text('الهاتف: لا يوجد'),
+              trailing: const Text('100,000 د.ع', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+              onTap: () {},
             ),
           ),
         ],
@@ -298,17 +278,46 @@ class RentalsScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(12.0),
       child: ListView(
-        children: const [
-          ListTile(
-            title: Text('سقالة حديد'),
-            subtitle: Text('2,000 د.ع / يوم'),
-            trailing: Text('متاح 30 من 30', style: TextStyle(color: Colors.green)),
+        children: [
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+            onPressed: () {},
+            icon: const Icon(Icons.add),
+            label: const Text('إيجار جديد'),
           ),
-          Divider(),
-          ListTile(
-            title: Text('خلاطة كونكريت'),
-            subtitle: Text('15,000 د.ع / يوم'),
-            trailing: Text('متاح 3 من 3', style: TextStyle(color: Colors.green)),
+          const SizedBox(height: 10),
+          const Text('قيد الإيجار (0)', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 5),
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(child: Text('لا توجد إيجارات نشطة حالياً', style: TextStyle(color: Colors.grey))),
+            ),
+          ),
+          const SizedBox(height: 15),
+          const Text('المعدات المتاحة', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 5),
+          Card(
+            child: ListTile(
+              title: const Text('سقالة حديد', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text('2,000 د.ع / يوم'),
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(color: Colors.green[100], borderRadius: BorderRadius.circular(8)),
+                child: const Text('متاح 30 من 30', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              title: const Text('خلاطة كونكريت', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text('15,000 د.ع / يوم'),
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(color: Colors.green[100], borderRadius: BorderRadius.circular(8)),
+                child: const Text('متاح 3 من 3', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+              ),
+            ),
           ),
         ],
       ),
@@ -324,6 +333,65 @@ class ReportsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Center(
       child: Text('تقارير المبيعات والأرباح', style: TextStyle(fontSize: 16, color: Colors.grey)),
+    );
+  }
+}
+
+// 6. شاشة الإعدادات الشاملة ومزامنة الهواتف (مطابقة تماماً للصور)
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('الإعدادات الشاملة ومزامنة الهواتف', style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFFE65100),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16.0),
+        children: [
+          const Text('بيانات المحل', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 16)),
+          const TextField(decoration: InputDecoration(labelText: 'اسم المحل', hintText: 'محل الكهربائيات والإنشائيات')),
+          const TextField(decoration: InputDecoration(labelText: 'رقم هاتف المحل')),
+          const TextField(decoration: InputDecoration(labelText: 'العنوان')),
+          const TextField(decoration: InputDecoration(labelText: 'العملة', hintText: 'د.ع')),
+          const SizedBox(height: 20),
+          const Text('تخصيص ألوان الواجهة', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 16)),
+          const ListTile(title: Text('لون الاسم (للعملاء والمعدات)'), subtitle: Text('أسود داكن')),
+          const ListTile(title: Text('لون التاريخ وتفاصيل الإيجار'), subtitle: Text('رمادي')),
+          const ListTile(title: Text('لون حالة الاستلام (مستلم)'), subtitle: Text('أخضر زاهي')),
+          const SizedBox(height: 20),
+          const Text('النسخ الاحتياطي والمزامنة بين الهواتف', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 16)),
+          const SizedBox(height: 10),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber[700], foregroundColor: Colors.white, padding: const EdgeInsets.all(12)),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('توليد باركود للمزامنة الفورية')));
+            },
+            icon: const Icon(Icons.qr_code),
+            label: const Text('توليد باركود للمزامنة الفورية مع الهاتف الثاني'),
+          ),
+          const SizedBox(height: 10),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey, foregroundColor: Colors.white, padding: const EdgeInsets.all(12)),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('مسح باركود لاستعادة البيانات')));
+            },
+            icon: const Icon(Icons.qr_code_scanner),
+            label: const Text('مسح باركود لاستعادة ونقل البيانات للهاتف الحالي'),
+          ),
+          const SizedBox(height: 10),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, padding: const EdgeInsets.all(12)),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('مزامنة لحظية عبر Google Drive')));
+            },
+            icon: const Icon(Icons.cloud_sync),
+            label: const Text('مزامنة لحظية عبر Google Drive / السحابة'),
+          ),
+        ],
+      ),
     );
   }
 }
