@@ -39,7 +39,7 @@ class StoreHomePage extends StatefulWidget {
 class _StoreHomePageState extends State<StoreHomePage> {
   int _currentIndex = 0;
 
-  // نقاط النسخ الاحتياطي والمزامنة المحدثة
+  // إعدادات نقاط النسخ الاحتياطي والمزامنة بين الهواتف
   void _showBackupOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -63,7 +63,7 @@ class _StoreHomePageState extends State<StoreHomePage> {
               onPressed: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('تم توليد باركود المزامنة الفورية بنجاح')),
+                  const SnackBar(content: Text('تم توليد باركود للمزامنة الفورية مع الهاتف الثاني')),
                 );
               },
               icon: const Icon(Icons.qr_code),
@@ -75,11 +75,11 @@ class _StoreHomePageState extends State<StoreHomePage> {
               onPressed: () {
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('تم مسح الباركود واستعادة البيانات بنجاح')),
+                  const SnackBar(content: Text('تم مسح الباركود لاستعادة ونقل البيانات للهاتف الحالي')),
                 );
               },
               icon: const Icon(Icons.qr_code_scanner),
-              label: const Text('مسح باركود لاستعادة ونقل البيانات'),
+              label: const Text('مسح باركود لاستعادة ونقل البيانات للهاتف الحالي'),
             ),
             const SizedBox(height: 10),
             ElevatedButton.icon(
@@ -117,32 +117,44 @@ class _StoreHomePageState extends State<StoreHomePage> {
         padding: const EdgeInsets.all(12.0),
         child: Column(
           children: [
-            // شريط الأزرار العلوية (إضافة صنف، إيجار جديد، دين جديد)
+            // الأزرار العلوية الثلاثة المطابقة للصورة الأصلية
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.teal[50], foregroundColor: Colors.teal[800]),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.teal[50],
+                      foregroundColor: Colors.teal[800],
+                      elevation: 0,
+                    ),
                     onPressed: () {},
-                    icon: const Icon(Icons.add),
+                    icon: const Icon(Icons.add, size: 18),
                     label: const Text('إضافة صنف'),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[50], foregroundColor: Colors.blue[800]),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue[50],
+                      foregroundColor: Colors.blue[800],
+                      elevation: 0,
+                    ),
                     onPressed: () {},
-                    icon: const Icon(Icons.handyman),
+                    icon: const Icon(Icons.handyman, size: 18),
                     label: const Text('إيجار جديد'),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.purple[50], foregroundColor: Colors.purple[800]),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.purple[50],
+                      foregroundColor: Colors.purple[800],
+                      elevation: 0,
+                    ),
                     onPressed: () {},
-                    icon: const Icon(Icons.money),
+                    icon: const Icon(Icons.money, size: 18),
                     label: const Text('دين جديد'),
                   ),
                 ),
@@ -153,27 +165,27 @@ class _StoreHomePageState extends State<StoreHomePage> {
             TextField(
               decoration: InputDecoration(
                 hintText: 'بحث عام في المخزن، الديون، الإيجار...',
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search, color: Colors.grey),
                 filled: true,
                 fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
               ),
             ),
-            const SizedBox(height: 15),
+            const SizedBox(height: 12),
             // شريط البحث عن صنف
             TextField(
               decoration: InputDecoration(
                 hintText: 'ابحث عن صنف (مثل: مصباح)...',
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search, color: Colors.grey),
                 filled: true,
                 fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
               ),
             ),
             const SizedBox(height: 40),
             const Center(
               child: Text(
-                'التطبيق جاهز ومتصل بقاعدة البيانات بنجاح',
+                'التطبيق يعمل بالواجهة الأصلية وجاهز للمزامنة',
                 style: TextStyle(color: Colors.grey, fontSize: 14),
               ),
             ),
@@ -189,6 +201,7 @@ class _StoreHomePageState extends State<StoreHomePage> {
         },
         type: BottomNavigationBarType.fixed,
         selectedItemColor: const Color(0xFFE65100),
+        unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.point_of_sale), label: 'بيع'),
           BottomNavigationBarItem(icon: Icon(Icons.inventory), label: 'المخزن'),
