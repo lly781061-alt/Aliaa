@@ -173,6 +173,15 @@ class StoreData extends ChangeNotifier {
   String activeColor = 'blue';
   String returnedColor = 'green';
 
+  // إعدادات مزامنة جوجل درايف الجديدة
+  String googleAccount = 'lly781061@gmail.com';
+  bool driveSyncActive = false;
+  bool driveNotifications = true;
+  bool dailyAutoBackup = true;
+  String dailyBackupTime = '07:40:00';
+  String lastSyncTime = '21-03-2026 01:49:46';
+  String lastDailyBackupTime = '17-11-2026 10:10:46';
+
   StoreData() {
     loadData();
   }
@@ -206,6 +215,14 @@ class StoreData extends ChangeNotifier {
     activeColor = prefs.getString('activeColor') ?? 'blue';
     returnedColor = prefs.getString('returnedColor') ?? 'green';
 
+    googleAccount = prefs.getString('googleAccount') ?? 'lly781061@gmail.com';
+    driveSyncActive = prefs.getBool('driveSyncActive') ?? false;
+    driveNotifications = prefs.getBool('driveNotifications') ?? true;
+    dailyAutoBackup = prefs.getBool('dailyAutoBackup') ?? true;
+    dailyBackupTime = prefs.getString('dailyBackupTime') ?? '07:40:00';
+    lastSyncTime = prefs.getString('lastSyncTime') ?? '21-03-2026 01:49:46';
+    lastDailyBackupTime = prefs.getString('lastDailyBackupTime') ?? '17-11-2026 10:10:46';
+
     notifyListeners();
   }
 
@@ -227,6 +244,15 @@ class StoreData extends ChangeNotifier {
     prefs.setString('dateColor', dateColor);
     prefs.setString('activeColor', activeColor);
     prefs.setString('returnedColor', returnedColor);
+
+    prefs.setString('googleAccount', googleAccount);
+    prefs.setBool('driveSyncActive', driveSyncActive);
+    prefs.setBool('driveNotifications', driveNotifications);
+    prefs.setBool('dailyAutoBackup', dailyAutoBackup);
+    prefs.setString('dailyBackupTime', dailyBackupTime);
+    prefs.setString('lastSyncTime', lastSyncTime);
+    prefs.setString('lastDailyBackupTime', lastDailyBackupTime);
+
     notifyListeners();
   }
 
@@ -255,71 +281,37 @@ class StoreData extends ChangeNotifier {
     }
   }
 
-  void addCustomerDebt(CustomerDebt c) {
-    debts.add(c);
-    saveData();
-  }
-
+  void addCustomerDebt(CustomerDebt c) { debts.add(c); saveData(); }
   void addTransactionToCustomer(String customerId, double amount, bool isPayment, String note) {
     int idx = debts.indexWhere((e) => e.id == customerId);
     if (idx != -1) {
-      final trans = DebtTransaction(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        amount: amount,
-        date: DateTime.now().toString().substring(0, 16),
-        isPayment: isPayment,
-        note: note,
-      );
-      debts[idx].transactions.insert(0, trans);
+      debts[idx].transactions.insert(0, DebtTransaction(id: DateTime.now().millisecondsSinceEpoch.toString(), amount: amount, date: DateTime.now().toString().substring(0, 16), isPayment: isPayment, note: note));
       saveData();
     }
   }
-
   void updateTransaction(String customerId, String transId, double amount, String note) {
     int cIdx = debts.indexWhere((e) => e.id == customerId);
     if (cIdx != -1) {
       int tIdx = debts[cIdx].transactions.indexWhere((t) => t.id == transId);
-      if (tIdx != -1) {
-        debts[cIdx].transactions[tIdx].amount = amount;
-        debts[cIdx].transactions[tIdx].note = note;
-        saveData();
-      }
+      if (tIdx != -1) { debts[cIdx].transactions[tIdx].amount = amount; debts[cIdx].transactions[tIdx].note = note; saveData(); }
     }
   }
-
   void removeTransaction(String customerId, String transId) {
     int cIdx = debts.indexWhere((e) => e.id == customerId);
-    if (cIdx != -1) {
-      debts[cIdx].transactions.removeWhere((t) => t.id == transId);
-      saveData();
-    }
+    if (cIdx != -1) { debts[cIdx].transactions.removeWhere((t) => t.id == transId); saveData(); }
   }
-
   void updateCustomerInfo(String customerId, String name, String phone, String? imagePath) {
     int idx = debts.indexWhere((e) => e.id == customerId);
-    if (idx != -1) {
-      debts[idx].name = name;
-      debts[idx].phone = phone;
-      if (imagePath != null) debts[idx].imagePath = imagePath;
-      saveData();
-    }
+    if (idx != -1) { debts[idx].name = name; debts[idx].phone = phone; if (imagePath != null) debts[idx].imagePath = imagePath; saveData(); }
   }
-
-  void removeCustomerDebt(String customerId) {
-    debts.removeWhere((e) => e.id == customerId);
-    saveData();
-  }
-
+  void removeCustomerDebt(String customerId) { debts.removeWhere((e) => e.id == customerId); saveData(); }
+  
   void addActiveRental(ActiveRental r) {
     rents.insert(0, r);
     int eqIdx = equipments.indexWhere((e) => e.name == r.equipmentName);
-    if (eqIdx != -1) {
-      equipments[eqIdx].availableCount -= r.count;
-      if (equipments[eqIdx].availableCount < 0) equipments[eqIdx].availableCount = 0;
-    }
+    if (eqIdx != -1) { equipments[eqIdx].availableCount -= r.count; if (equipments[eqIdx].availableCount < 0) equipments[eqIdx].availableCount = 0; }
     saveData();
   }
-
   void updateRental(String id, int newCount, String note) {
     int idx = rents.indexWhere((e) => e.id == id);
     if (idx != -1) {
@@ -327,14 +319,10 @@ class StoreData extends ChangeNotifier {
       rents[idx].count = newCount;
       rents[idx].note = note;
       int eqIdx = equipments.indexWhere((e) => e.name == rents[idx].equipmentName);
-      if (eqIdx != -1) {
-        int diff = newCount - oldCnt;
-        equipments[eqIdx].availableCount -= diff;
-      }
+      if (eqIdx != -1) { equipments[eqIdx].availableCount -= (newCount - oldCnt); }
       saveData();
     }
   }
-
   void returnRental(String id) {
     int idx = rents.indexWhere((e) => e.id == id);
     if (idx != -1) {
@@ -342,41 +330,17 @@ class StoreData extends ChangeNotifier {
       int eqIdx = equipments.indexWhere((e) => e.name == rents[idx].equipmentName);
       if (eqIdx != -1) {
         equipments[eqIdx].availableCount += rents[idx].count;
-        if (equipments[eqIdx].availableCount > equipments[eqIdx].totalCount) {
-          equipments[eqIdx].availableCount = equipments[eqIdx].totalCount;
-        }
+        if (equipments[eqIdx].availableCount > equipments[eqIdx].totalCount) equipments[eqIdx].availableCount = equipments[eqIdx].totalCount;
       }
       saveData();
     }
   }
-
-  void addItem(StoreItem item) {
-    items.add(item);
-    saveData();
-  }
-
+  void addItem(StoreItem item) { items.add(item); saveData(); }
   void updateItem(StoreItem item) {
     int idx = items.indexWhere((e) => e.id == item.id);
-    if (idx != -1) {
-      items[idx] = item;
-      saveData();
-    }
+    if (idx != -1) { items[idx] = item; saveData(); }
   }
-
-  void removeItem(String id) {
-    items.removeWhere((e) => e.id == id);
-    saveData();
-  }
-
-  void addSection(String s) {
-    if (!customSections.contains(s)) {
-      customSections.add(s);
-      saveData();
-    }
-  }
-
-  void removeSection(String s) {
-    customSections.remove(s);
-    saveData();
-  }
+  void removeItem(String id) { items.removeWhere((e) => e.id == id); saveData(); }
+  void addSection(String s) { if (!customSections.contains(s)) { customSections.add(s); saveData(); } }
+  void removeSection(String s) { customSections.remove(s); saveData(); }
 }
