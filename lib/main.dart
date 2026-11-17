@@ -40,7 +40,6 @@ class StoreMainScreen extends StatefulWidget {
 class _StoreMainScreenState extends State<StoreMainScreen> {
   int _currentIndex = 0;
 
-  // شاشات التطبيق الأصلية
   final List<Widget> _screens = [
     const SaleScreen(),
     const InventoryScreen(),
@@ -49,7 +48,6 @@ class _StoreMainScreenState extends State<StoreMainScreen> {
     const ReportsScreen(),
   ];
 
-  // دالة إعدادات النسخ الاحتياطي والمزامنة (التي تم تعديل نقاطها)
   void _showSettingsModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -146,7 +144,6 @@ class _StoreMainScreenState extends State<StoreMainScreen> {
   }
 }
 
-// 1. شاشة البيع الأصلية
 class SaleScreen extends StatelessWidget {
   const SaleScreen({super.key});
 
@@ -219,7 +216,6 @@ class SaleScreen extends StatelessWidget {
   }
 }
 
-// 2. شاشة المخزن الأصلية
 class InventoryScreen extends StatelessWidget {
   const InventoryScreen({super.key});
 
@@ -248,7 +244,6 @@ class InventoryScreen extends StatelessWidget {
   }
 }
 
-// 3. شاشة الديون الأصلية
 class DebtsScreen extends StatelessWidget {
   const DebtsScreen({super.key});
 
@@ -276,7 +271,6 @@ class DebtsScreen extends StatelessWidget {
   }
 }
 
-// 4. شاشة الإيجار الأصلية
 class RentalsScreen extends StatelessWidget {
   const RentalsScreen({super.key});
 
@@ -303,7 +297,6 @@ class RentalsScreen extends StatelessWidget {
   }
 }
 
-// 5. شاشة التقارير الأصلية
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
 
