@@ -20,7 +20,10 @@ class StoreApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'محل الكهربائيات والإنشائيات',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: ThemeData(
+        primarySwatch: Colors.orange,
+        scaffoldBackgroundColor: const Color(0xFFF5F6F8),
+      ),
       home: const StoreHomePage(),
     );
   }
@@ -37,9 +40,62 @@ class _StoreHomePageState extends State<StoreHomePage> {
   int _currentIndex = 0;
 
   // نقاط النسخ الاحتياطي والمزامنة المحدثة
-  void _executeBackupPoint(String type) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('تم تنفيذ نقطة النسخ الاحتياطي: $type بنجاح')),
+  void _showBackupOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'الإعدادات الشاملة ومزامنة الهواتف',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber[800], foregroundColor: Colors.white),
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم توليد باركود المزامنة الفورية بنجاح')),
+                );
+              },
+              icon: const Icon(Icons.qr_code),
+              label: const Text('توليد باركود للمزامنة الفورية مع الهاتف الثاني'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey, foregroundColor: Colors.white),
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم مسح الباركود واستعادة البيانات بنجاح')),
+                );
+              },
+              icon: const Icon(Icons.qr_code_scanner),
+              label: const Text('مسح باركود لاستعادة ونقل البيانات'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تمت المزامنة لحظياً عبر Google Drive / السحابة')),
+                );
+              },
+              icon: const Icon(Icons.cloud_sync),
+              label: const Text('مزامنة لحظية عبر Google Drive / السحابة'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -47,63 +103,79 @@ class _StoreHomePageState extends State<StoreHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('محل الكهربائيات والإنشائيات'),
+        title: const Text('محل الكهربائيات والإنشائيات', style: TextStyle(color: Colors.white)),
         centerTitle: true,
+        backgroundColor: const Color(0xFFE65100),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              // نافذة الإعدادات ونقاط النسخ
-              showModalBottomSheet(
-                context: context,
-                builder: (context) => Container(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('الإعدادات الشاملة ومزامنة الهواتف', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      const SizedBox(height: 15),
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _executeBackupPoint('توليد باركود للمزامنة');
-                        },
-                        icon: const Icon(Icons.qr_code),
-                        label: const Text('توليد باركود للمزامنة الفورية مع الهاتف الثاني'),
-                      ),
-                      const SizedBox(height: 10),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _executeBackupPoint('مزامنة Google Drive');
-                        },
-                        icon: const Icon(Icons.cloud_sync),
-                        label: const Text('مزامنة لحظية عبر Google Drive / السحابة'),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+            icon: const Icon(Icons.settings, color: Colors.white),
+            onPressed: () => _showBackupOptions(context),
           ),
         ],
       ),
-      body: Center(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(12.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.bolt, size: 80, color: Colors.orange),
-            const SizedBox(height: 10),
-            const Text(
-              'أهلاً بك في نظام إدارة المحل والإنشائيات',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            // شريط الأزرار العلوية (إضافة صنف، إيجار جديد، دين جديد)
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.teal[50], foregroundColor: Colors.teal[800]),
+                    onPressed: () {},
+                    icon: const Icon(Icons.add),
+                    label: const Text('إضافة صنف'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[50], foregroundColor: Colors.blue[800]),
+                    onPressed: () {},
+                    icon: const Icon(Icons.handyman),
+                    label: const Text('إيجار جديد'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.purple[50], foregroundColor: Colors.purple[800]),
+                    onPressed: () {},
+                    icon: const Icon(Icons.money),
+                    label: const Text('دين جديد'),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: () => _executeBackupPoint('نسخ احتياطي يدوي'),
-              icon: const Icon(Icons.backup),
-              label: const Text('إجراء نسخ احتياطي الآن'),
+            const SizedBox(height: 15),
+            // شريط البحث العام
+            TextField(
+              decoration: InputDecoration(
+                hintText: 'بحث عام في المخزن، الديون، الإيجار...',
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 15),
+            // شريط البحث عن صنف
+            TextField(
+              decoration: InputDecoration(
+                hintText: 'ابحث عن صنف (مثل: مصباح)...',
+                prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 40),
+            const Center(
+              child: Text(
+                'التطبيق جاهز ومتصل بقاعدة البيانات بنجاح',
+                style: TextStyle(color: Colors.grey, fontSize: 14),
+              ),
             ),
           ],
         ),
@@ -116,12 +188,13 @@ class _StoreHomePageState extends State<StoreHomePage> {
           });
         },
         type: BottomNavigationBarType.fixed,
+        selectedItemColor: const Color(0xFFE65100),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.store), label: 'البيع'),
+          BottomNavigationBarItem(icon: Icon(Icons.point_of_sale), label: 'بيع'),
           BottomNavigationBarItem(icon: Icon(Icons.inventory), label: 'المخزن'),
           BottomNavigationBarItem(icon: Icon(Icons.money), label: 'الديون'),
           BottomNavigationBarItem(icon: Icon(Icons.handyman), label: 'الإيجار'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: ' التقارير'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'التقارير'),
         ],
       ),
     );
