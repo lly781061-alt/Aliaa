@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
 String formatCurrency(dynamic amount) {
@@ -149,6 +150,9 @@ class StoreItem {
 }
 
 class StoreData extends ChangeNotifier {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final String storeId = "my_main_store_2026";
+
   List<CustomerDebt> debts = [];
   List<RentalEquipment> equipments = [
     RentalEquipment(id: '1', name: 'سقالة حديد', totalCount: 30, availableCount: 30, pricePerDay: 2000),
@@ -173,7 +177,6 @@ class StoreData extends ChangeNotifier {
   String activeColor = 'blue';
   String returnedColor = 'green';
 
-  // إعدادات مزامنة جوجل درايف الجديدة
   String googleAccount = 'lly781061@gmail.com';
   bool driveSyncActive = false;
   bool driveNotifications = true;
@@ -184,25 +187,29 @@ class StoreData extends ChangeNotifier {
 
   StoreData() {
     loadData();
+    initRealtimeSync();
+  }
+
+  // الاستماع الحي الفوري من Firestore لتتزامن البيانات بين الهواتف لحظياً
+  void initRealtimeSync() {
+    _db.collection('stores').doc(storeId).collection('debts').snapshots().listen((snapshot) {
+      debts = snapshot.docs.map((doc) => CustomerDebt.fromJson(doc.data())).toList();
+      notifyListeners();
+    });
+
+    _db.collection('stores').doc(storeId).collection('items').snapshots().listen((snapshot) {
+      items = snapshot.docs.map((doc) => StoreItem.fromJson(doc.data())).toList();
+      notifyListeners();
+    });
+
+    _db.collection('stores').doc(storeId).collection('rents').snapshots().listen((snapshot) {
+      rents = snapshot.docs.map((doc) => ActiveRental.fromJson(doc.data())).toList();
+      notifyListeners();
+    });
   }
 
   Future<void> loadData() async {
     final prefs = await SharedPreferences.getInstance();
-    final dStr = prefs.getString('debts_v2');
-    if (dStr != null) debts = (jsonDecode(dStr) as List).map((e) => CustomerDebt.fromJson(e)).toList();
-    
-    final eqStr = prefs.getString('equipments');
-    if (eqStr != null) equipments = (jsonDecode(eqStr) as List).map((e) => RentalEquipment.fromJson(e)).toList();
-
-    final rStr = prefs.getString('rents_v2');
-    if (rStr != null) rents = (jsonDecode(rStr) as List).map((e) => ActiveRental.fromJson(e)).toList();
-
-    final iStr = prefs.getString('items');
-    if (iStr != null) items = (jsonDecode(iStr) as List).map((e) => StoreItem.fromJson(e)).toList();
-
-    final sStr = prefs.getString('customSections');
-    if (sStr != null) customSections = List<String>.from(jsonDecode(sStr));
-
     storeName = prefs.getString('storeName') ?? 'محل الكهربائيات والإنشائيات';
     storePhone = prefs.getString('storePhone') ?? '';
     storeAddress = prefs.getString('storeAddress') ?? '';
@@ -228,11 +235,6 @@ class StoreData extends ChangeNotifier {
 
   Future<void> saveData() async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setString('debts_v2', jsonEncode(debts.map((e) => e.toJson()).toList()));
-    prefs.setString('equipments', jsonEncode(equipments.map((e) => e.toJson()).toList()));
-    prefs.setString('rents_v2', jsonEncode(rents.map((e) => e.toJson()).toList()));
-    prefs.setString('items', jsonEncode(items.map((e) => e.toJson()).toList()));
-    prefs.setString('customSections', jsonEncode(customSections));
     prefs.setString('storeName', storeName);
     prefs.setString('storePhone', storePhone);
     prefs.setString('storeAddress', storeAddress);
@@ -268,12 +270,24 @@ class StoreData extends ChangeNotifier {
   bool importFromJson(String jsonStr) {
     try {
       final data = jsonDecode(jsonStr);
-      if (data['debts'] != null) debts = (data['debts'] as List).map((e) => CustomerDebt.fromJson(e)).toList();
-      if (data['rents'] != null) rents = (data['rents'] as List).map((e) => ActiveRental.fromJson(e)).toList();
-      if (data['items'] != null) items = (data['items'] as List).map((e) => StoreItem.fromJson(e)).toList();
-      if (data['equipments'] != null) equipments = (data['equipments'] as List).map((e) => RentalEquipment.fromJson(e)).toList();
-      if (data['customSections'] != null) customSections = List<String>.from(data['customSections']);
-      if (data['storeName'] != null) storeName = data['storeName'];
+      if (data['debts'] != null) {
+        debts = (data['debts'] as List).map((e) => CustomerDebt.fromJson(e)).toList();
+        for (var d in debts) {
+          _db.collection('stores').doc(storeId).collection('debts').doc(d.id).set(d.toJson());
+        }
+      }
+      if (data['items'] != null) {
+        items = (data['items'] as List).map((e) => StoreItem.fromJson(e)).toList();
+        for (var i in items) {
+          _db.collection('stores').doc(storeId).collection('items').doc(i.id).set(i.toJson());
+        }
+      }
+      if (data['rents'] != null) {
+        rents = (data['rents'] as List).map((e) => ActiveRental.fromJson(e)).toList();
+        for (var r in rents) {
+          _db.collection('stores').doc(storeId).collection('rents').doc(r.id).set(r.toJson());
+        }
+      }
       saveData();
       return true;
     } catch (e) {
@@ -281,38 +295,69 @@ class StoreData extends ChangeNotifier {
     }
   }
 
-  void addCustomerDebt(CustomerDebt c) { debts.add(c); saveData(); }
-  void addTransactionToCustomer(String customerId, double amount, bool isPayment, String note) {
+  Future<void> addCustomerDebt(CustomerDebt c) async { 
+    debts.add(c); 
+    notifyListeners(); 
+    await _db.collection('stores').doc(storeId).collection('debts').doc(c.id).set(c.toJson());
+  }
+
+  Future<void> addTransactionToCustomer(String customerId, double amount, bool isPayment, String note) async {
     int idx = debts.indexWhere((e) => e.id == customerId);
     if (idx != -1) {
       debts[idx].transactions.insert(0, DebtTransaction(id: DateTime.now().millisecondsSinceEpoch.toString(), amount: amount, date: DateTime.now().toString().substring(0, 16), isPayment: isPayment, note: note));
-      saveData();
+      notifyListeners();
+      await _db.collection('stores').doc(storeId).collection('debts').doc(customerId).set(debts[idx].toJson());
     }
   }
-  void updateTransaction(String customerId, String transId, double amount, String note) {
+
+  Future<void> updateTransaction(String customerId, String transId, double amount, String note) async {
     int cIdx = debts.indexWhere((e) => e.id == customerId);
     if (cIdx != -1) {
       int tIdx = debts[cIdx].transactions.indexWhere((t) => t.id == transId);
-      if (tIdx != -1) { debts[cIdx].transactions[tIdx].amount = amount; debts[cIdx].transactions[tIdx].note = note; saveData(); }
+      if (tIdx != -1) { 
+        debts[cIdx].transactions[tIdx].amount = amount; 
+        debts[cIdx].transactions[tIdx].note = note; 
+        notifyListeners();
+        await _db.collection('stores').doc(storeId).collection('debts').doc(customerId).set(debts[cIdx].toJson());
+      }
     }
   }
-  void removeTransaction(String customerId, String transId) {
+
+  Future<void> removeTransaction(String customerId, String transId) async {
     int cIdx = debts.indexWhere((e) => e.id == customerId);
-    if (cIdx != -1) { debts[cIdx].transactions.removeWhere((t) => t.id == transId); saveData(); }
+    if (cIdx != -1) { 
+      debts[cIdx].transactions.removeWhere((t) => t.id == transId); 
+      notifyListeners();
+      await _db.collection('stores').doc(storeId).collection('debts').doc(customerId).set(debts[cIdx].toJson());
+    }
   }
-  void updateCustomerInfo(String customerId, String name, String phone, String? imagePath) {
+
+  Future<void> updateCustomerInfo(String customerId, String name, String phone, String? imagePath) async {
     int idx = debts.indexWhere((e) => e.id == customerId);
-    if (idx != -1) { debts[idx].name = name; debts[idx].phone = phone; if (imagePath != null) debts[idx].imagePath = imagePath; saveData(); }
+    if (idx != -1) { 
+      debts[idx].name = name; 
+      debts[idx].phone = phone; 
+      if (imagePath != null) debts[idx].imagePath = imagePath; 
+      notifyListeners();
+      await _db.collection('stores').doc(storeId).collection('debts').doc(customerId).set(debts[idx].toJson());
+    }
   }
-  void removeCustomerDebt(String customerId) { debts.removeWhere((e) => e.id == customerId); saveData(); }
+
+  Future<void> removeCustomerDebt(String customerId) async { 
+    debts.removeWhere((e) => e.id == customerId); 
+    notifyListeners();
+    await _db.collection('stores').doc(storeId).collection('debts').doc(customerId).delete();
+  }
   
-  void addActiveRental(ActiveRental r) {
+  Future<void> addActiveRental(ActiveRental r) async {
     rents.insert(0, r);
     int eqIdx = equipments.indexWhere((e) => e.name == r.equipmentName);
     if (eqIdx != -1) { equipments[eqIdx].availableCount -= r.count; if (equipments[eqIdx].availableCount < 0) equipments[eqIdx].availableCount = 0; }
-    saveData();
+    notifyListeners();
+    await _db.collection('stores').doc(storeId).collection('rents').doc(r.id).set(r.toJson());
   }
-  void updateRental(String id, int newCount, String note) {
+
+  Future<void> updateRental(String id, int newCount, String note) async {
     int idx = rents.indexWhere((e) => e.id == id);
     if (idx != -1) {
       int oldCnt = rents[idx].count;
@@ -320,10 +365,12 @@ class StoreData extends ChangeNotifier {
       rents[idx].note = note;
       int eqIdx = equipments.indexWhere((e) => e.name == rents[idx].equipmentName);
       if (eqIdx != -1) { equipments[eqIdx].availableCount -= (newCount - oldCnt); }
-      saveData();
+      notifyListeners();
+      await _db.collection('stores').doc(storeId).collection('rents').doc(id).set(rents[idx].toJson());
     }
   }
-  void returnRental(String id) {
+
+  Future<void> returnRental(String id) async {
     int idx = rents.indexWhere((e) => e.id == id);
     if (idx != -1) {
       rents[idx].isReturned = true;
@@ -332,15 +379,32 @@ class StoreData extends ChangeNotifier {
         equipments[eqIdx].availableCount += rents[idx].count;
         if (equipments[eqIdx].availableCount > equipments[eqIdx].totalCount) equipments[eqIdx].availableCount = equipments[eqIdx].totalCount;
       }
-      saveData();
+      notifyListeners();
+      await _db.collection('stores').doc(storeId).collection('rents').doc(id).set(rents[idx].toJson());
     }
   }
-  void addItem(StoreItem item) { items.add(item); saveData(); }
-  void updateItem(StoreItem item) {
-    int idx = items.indexWhere((e) => e.id == item.id);
-    if (idx != -1) { items[idx] = item; saveData(); }
+
+  Future<void> addItem(StoreItem item) async { 
+    items.add(item); 
+    notifyListeners(); 
+    await _db.collection('stores').doc(storeId).collection('items').doc(item.id).set(item.toJson());
   }
-  void removeItem(String id) { items.removeWhere((e) => e.id == id); saveData(); }
+
+  Future<void> updateItem(StoreItem item) async {
+    int idx = items.indexWhere((e) => e.id == item.id);
+    if (idx != -1) { 
+      items[idx] = item; 
+      notifyListeners(); 
+      await _db.collection('stores').doc(storeId).collection('items').doc(item.id).set(item.toJson());
+    }
+  }
+
+  Future<void> removeItem(String id) async { 
+    items.removeWhere((e) => e.id == id); 
+    notifyListeners();
+    await _db.collection('stores').doc(storeId).collection('items').doc(id).delete();
+  }
+
   void addSection(String s) { if (!customSections.contains(s)) { customSections.add(s); saveData(); } }
   void removeSection(String s) { customSections.remove(s); saveData(); }
 }
