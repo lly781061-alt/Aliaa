@@ -160,12 +160,9 @@ class StoreData extends ChangeNotifier {
   List<StoreItem> items = [];
   List<String> customSections = ['كهربائيات', 'إنشائيات', 'أخرى'];
   
-  bool autoBackup = true;
-  String backupMode = 'manual';
   String storeName = 'محل الكهربائيات والإنشائيات';
   String storePhone = '';
   String storeAddress = '';
-  String invoiceFooter = 'شكراً لتعاملكم معنا';
   String currencySymbol = 'د.ع';
   String primaryColorName = 'amber';
   int minRentalDays = 1;
@@ -278,6 +275,26 @@ class StoreData extends ChangeNotifier {
     }
   }
 
+  void updateTransaction(String customerId, String transId, double amount, String note) {
+    int cIdx = debts.indexWhere((e) => e.id == customerId);
+    if (cIdx != -1) {
+      int tIdx = debts[cIdx].transactions.indexWhere((t) => t.id == transId);
+      if (tIdx != -1) {
+        debts[cIdx].transactions[tIdx].amount = amount;
+        debts[cIdx].transactions[tIdx].note = note;
+        saveData();
+      }
+    }
+  }
+
+  void removeTransaction(String customerId, String transId) {
+    int cIdx = debts.indexWhere((e) => e.id == customerId);
+    if (cIdx != -1) {
+      debts[cIdx].transactions.removeWhere((t) => t.id == transId);
+      saveData();
+    }
+  }
+
   void updateCustomerInfo(String customerId, String name, String phone, String? imagePath) {
     int idx = debts.indexWhere((e) => e.id == customerId);
     if (idx != -1) {
@@ -301,6 +318,21 @@ class StoreData extends ChangeNotifier {
       if (equipments[eqIdx].availableCount < 0) equipments[eqIdx].availableCount = 0;
     }
     saveData();
+  }
+
+  void updateRental(String id, int newCount, String note) {
+    int idx = rents.indexWhere((e) => e.id == id);
+    if (idx != -1) {
+      int oldCnt = rents[idx].count;
+      rents[idx].count = newCount;
+      rents[idx].note = note;
+      int eqIdx = equipments.indexWhere((e) => e.name == rents[idx].equipmentName);
+      if (eqIdx != -1) {
+        int diff = newCount - oldCnt;
+        equipments[eqIdx].availableCount -= diff;
+      }
+      saveData();
+    }
   }
 
   void returnRental(String id) {
