@@ -29,15 +29,16 @@ class StoreHomePage extends StatefulWidget {
 class _StoreHomePageState extends State<StoreHomePage> {
   final TextEditingController _itemController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
-  final List> _sales = [];
+  
+  // قائمة بسيطة جداً لتجنب أي أخطاء
+  final List<String> _items = [];
+  final List<String> _prices = [];
 
-  void _addSale() {
+  void _addItem() {
     if (_itemController.text.isNotEmpty && _priceController.text.isNotEmpty) {
       setState(() {
-        _sales.add({
-          'item': _itemController.text,
-          'price': _priceController.text,
-        });
+        _items.add(_itemController.text);
+        _prices.add(_priceController.text);
       });
       _itemController.clear();
       _priceController.clear();
@@ -67,21 +68,21 @@ class _StoreHomePageState extends State<StoreHomePage> {
             ),
             const SizedBox(height: 15),
             ElevatedButton.icon(
-              onPressed: _addSale,
+              onPressed: _addItem,
               icon: const Icon(Icons.add),
               label: const Text('إضافة مادة للمتجر'),
             ),
             const SizedBox(height: 20),
             Expanded(
-              child: _sales.isEmpty
+              child: _items.isEmpty
                   ? const Center(child: Text('لا توجد مبيعات مسجلة حتى الآن'))
                   : ListView.builder(
-                      itemCount: _sales.length,
+                      itemCount: _items.length,
                       itemBuilder: (context, index) {
                         return ListTile(
                           leading: const CircleAvatar(child: Icon(Icons.bolt)),
-                          title: Text(_sales[index]['item']!),
-                          trailing: Text('${_sales[index]['price']} IQD',
+                          title: Text(_items[index]),
+                          trailing: Text('${_prices[index]} IQD',
                               style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.green)),
