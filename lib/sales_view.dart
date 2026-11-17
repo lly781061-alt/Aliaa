@@ -66,7 +66,7 @@ class _SalesViewScreenState extends State<SalesViewScreen> {
                 itemBuilder: (context, index) {
                   return Card(
                     child: ListTile(
-                      title: Text(_sales[index]['name']!),
+                      title: Text(_sales[index]['name'] ?? ''),
                       trailing: Text('${_sales[index]['price']} IQD'),
                     ),
                   );
