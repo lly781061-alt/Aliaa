@@ -1,200 +1,308 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-void main() => runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('Firebase Init Error: $e');
+  }
+  runApp(const StoreApp());
+}
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class StoreApp extends StatelessWidget {
+  const StoreApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'نظام المبيعات',
       debugShowCheckedModeBanner: false,
+      title: 'محل الكهربائيات والإنشائيات',
       theme: ThemeData(
-        fontFamily: 'Cairo', // خط عربي مناسب
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.orange,
+        scaffoldBackgroundColor: const Color(0xFFF5F6F8),
+        fontFamily: 'Cairo',
       ),
-      home: const MainScreen(),
+      home: const StoreMainScreen(),
     );
   }
 }
 
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
+class StoreMainScreen extends StatefulWidget {
+  const StoreMainScreen({super.key});
+
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  State<StoreMainScreen> createState() => _StoreMainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
-  int _currentIndex = 1; // نبدأ بصفحة المخزن
+class _StoreMainScreenState extends State<StoreMainScreen> {
+  int _currentIndex = 0;
+  final TextEditingController _globalSearchController = TextEditingController();
 
-  final List<Widget> _pages = [
-    const Center(child: Text('صفحة البيع (قيد التطوير)')),
-    const InventoryPage(),
-    const Center(child: Text('صفحة الديون (قيد التطوير)')),
-    const Center(child: Text('صفحة الإيجار (قيد التطوير)')),
-    const Center(child: Text('صفحة التقارير (قيد التطوير)')),
+  // الأقسام بالترتيب المطلوب من اليمين: بيع، الديون، الإيجارات، المخزن، التقارير
+  final List<Widget> _screens = const [
+    SaleSectionScreen(),
+    DebtsSectionScreen(),
+    RentalsSectionScreen(),
+    InventorySectionScreen(),
+    ReportsSectionScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _pages[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.indigo,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.point_of_sale), label: 'بيع'),
-          BottomNavigationBarItem(icon: Icon(Icons.inventory), label: 'المخزن'),
-          BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet), label: 'الديون'),
-          BottomNavigationBarItem(icon: Icon(Icons.construction), label: 'الإيجار'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'التقارير'),
-        ],
-      ),
-    );
-  }
-}
-
-// صفحة المخزن (مطابقة للصورة)
-class InventoryPage extends StatelessWidget {
-  const InventoryPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('محل الكهربائيات والإنشائيات', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          centerTitle: true,
+          backgroundColor: const Color(0xFFE65100),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.settings, color: Colors.white),
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsSectionScreen()));
+              },
+            ),
+          ],
+        ),
+        body: Column(
           children: [
-            // الهيدر العلوي
+            // اختصارات علوية (صنف جديد، إيجار جديد، دين جديد)
             Container(
-              padding: const EdgeInsets.only(top: 50, bottom: 20, left: 15, right: 15),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFFFF7E5F), Color(0xFFFEB47B), Color(0xFFB06AB3)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30)),
-              ),
-              child: Column(
+              padding: const EdgeInsets.all(10),
+              color: Colors.orange[50],
+              child: Row(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Icon(Icons.settings, color: Colors.white, size: 28),
-                      const Text('محل الكهربائيات والإنشائيات', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(width: 28),
-                    ],
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+                      onPressed: () {},
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('صنف جديد', style: TextStyle(fontSize: 12)),
+                    ),
                   ),
-                  const SizedBox(height: 15),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _buildHeaderBtn(Icons.add, 'إضافة صنف'),
-                      _buildHeaderBtn(Icons.store, 'إيجار جديد'),
-                      _buildHeaderBtn(Icons.person_add, 'دين جديد'),
-                    ],
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+                      onPressed: () {},
+                      icon: const Icon(Icons.handyman, size: 16),
+                      label: const Text('إيجار جديد', style: TextStyle(fontSize: 12)),
+                    ),
                   ),
-                  const SizedBox(height: 15),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: 'بحث عام في المخزن، الديون، الإيجار...',
-                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(15), borderSide: BorderSide.none),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.purple, foregroundColor: Colors.white),
+                      onPressed: () {},
+                      icon: const Icon(Icons.money, size: 16),
+                      label: const Text('دين جديد', style: TextStyle(fontSize: 12)),
                     ),
                   ),
                 ],
               ),
             ),
-            // أزرار الفلترة
+            // بحث عام في كل الأقسام
             Padding(
-              padding: const EdgeInsets.all(15.0),
-              child: Row(
-                children: [
-                  _buildFilterBtn('الكل', true),
-                  _buildFilterBtn('كهربائيات', false),
-                  _buildFilterBtn('إنشائيات', false),
-                  _buildFilterBtn('أخرى', false),
-                ],
+              padding: const EdgeInsets.all(8.0),
+              child: TextField(
+                controller: _globalSearchController,
+                decoration: InputDecoration(
+                  hintText: 'بحث عام في (المخزن، الديون، الإيجار، المبيعات)...',
+                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                ),
+                onChanged: (value) {
+                  // منطق البحث العام اللحظي
+                },
               ),
             ),
-            // قائمة المنتجات (ثابتة كمثال)
-            ListView(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 15),
-              children: [
-                _buildProductCard('مصباح LED', 'الكترونيات', '5,000 د.ع', 'متوفر: 50', Colors.green),
-                _buildProductCard('سلك نحاس', 'كهربائيات', '15,000 د.ع', 'متوفر: 3', Colors.red),
-              ],
-            )
+            // محتوى الشاشة الحالية
+            Expanded(
+              child: _screens[_currentIndex],
+            ),
+          ],
+        ),
+        // الأقسام من اليمين لليسار في الشريط السفلي
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: const Color(0xFFE65100),
+          unselectedItemColor: Colors.grey,
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.point_of_sale), label: 'بيع'),
+            BottomNavigationBarItem(icon: Icon(Icons.money), label: 'الديون'),
+            BottomNavigationBarItem(icon: Icon(Icons.handyman), label: 'الإيجارات'),
+            BottomNavigationBarItem(icon: Icon(Icons.inventory), label: 'المخزن'),
+            BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'التقارير'),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {},
-        backgroundColor: const Color(0xFF26A69A),
-        child: const Icon(Icons.add, color: Colors.white, size: 30),
-      ),
     );
   }
+}
 
-  Widget _buildHeaderBtn(IconData icon, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-      decoration: BoxDecoration(color: Colors.white.withOpacity(0.3), borderRadius: BorderRadius.circular(15)),
+// 1. قسم البيع
+class SaleSectionScreen extends StatelessWidget {
+  const SaleSectionScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
       child: Column(
         children: [
-          Icon(icon, color: Colors.white),
-          const SizedBox(height: 5),
-          Text(text, style: const TextStyle(color: Colors.white, fontSize: 12)),
+          const Expanded(child: Center(child: Text('شاشة نقطة البيع وتسجيل الفواتير', style: TextStyle(color: Colors.grey)))),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('إجمالي الفاتورة: 0 د.ع', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                onPressed: () {},
+                child: const Text('إتمام البيع'),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildFilterBtn(String text, bool isActive) {
-    return Container(
-      margin: const EdgeInsets.only(left: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-      decoration: BoxDecoration(
-        color: isActive ? Colors.indigo.shade50 : Colors.white,
-        border: Border.all(color: isActive ? Colors.indigo : Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(text, style: TextStyle(color: isActive ? Colors.indigo : Colors.black87, fontWeight: isActive ? FontWeight.bold : FontWeight.normal)),
-    );
-  }
+// 2. قسم الديون
+class DebtsSectionScreen extends StatelessWidget {
+  const DebtsSectionScreen({super.key});
 
-  Widget _buildProductCard(String name, String category, String price, String stock, Color stockColor) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      elevation: 1,
-      child: Padding(
-        padding: const EdgeInsets.all(15.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: Colors.blue[800], borderRadius: BorderRadius.circular(10)),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                Text(category, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                Text('إجمالي الديون المستحقة\n0 د.ع', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                Text('المديونون: 0', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ],
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(price, style: const TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold)),
-                Text(stock, style: TextStyle(color: stockColor, fontSize: 12)),
-              ],
-            )
+          ),
+          const Expanded(child: Center(child: Text('قائمة الديون والعملاء (تسجيل واستلام الدين)', style: TextStyle(color: Colors.grey)))),
+        ],
+      ),
+    );
+  }
+}
+
+// 3. قسم الإيجارات
+class RentalsSectionScreen extends StatelessWidget {
+  const RentalsSectionScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Column(
+        children: [
+          const Expanded(child: Center(child: Text('إدارة المعدات والإيجارات النشطة والمعلومات السابقة للمؤجرين', style: TextStyle(color: Colors.grey)))),
+        ],
+      ),
+    );
+  }
+}
+
+// 4. قسم المخزن
+class InventorySectionScreen extends StatelessWidget {
+  const InventorySectionScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: Column(
+        children: [
+          const Expanded(child: Center(child: Text('قائمة الأصناف والمخزن', style: TextStyle(color: Colors.grey)))),
+        ],
+      ),
+    );
+  }
+}
+
+// 5. قسم التقارير
+class ReportsSectionScreen extends StatelessWidget {
+  const ReportsSectionScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text('تقارير الأرباح والمبيعات', style: TextStyle(color: Colors.grey)),
+    );
+  }
+}
+
+// قسم الإعدادات والنسخ الاحتياطي والمزامنة والتحكم بالألوان
+class SettingsSectionScreen extends StatelessWidget {
+  const SettingsSectionScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('الإعدادات والنسخ الاحتياطي والمزامنة', style: TextStyle(color: Colors.white)),
+          backgroundColor: const Color(0xFFE65100),
+        ),
+        body: ListView(
+          padding: const EdgeInsets.all(16.0),
+          children: [
+            const Text('المزامنة اللحظية بين الهواتف (Firebase)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 16)),
+            const Text('البيانات تتزامن لحظياً بين الهاتف الأول والثاني عند الاتصال بالإنترنت.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            const Divider(height: 30),
+            
+            const Text('النسخ الاحتياطي والاستعادة', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 16)),
+            ListTile(
+              leading: const Icon(Icons.cloud_sync, color: Colors.green),
+              title: const Text('مزامنة وحفظ عبر Google Drive / السحابة'),
+              subtitle: const Text('اختيار وتغيير حساب النسخ الاحتياطي'),
+              onTap: () {},
+            ),
+            ListTile(
+              leading: const Icon(Icons.phone_android, color: Colors.orange),
+              title: const Text('حفظ واستعادة النسخة الاحتياطية محلياً في الجهاز'),
+              onTap: () {},
+            ),
+            ListTile(
+              leading: const Icon(Icons.qr_code, color: Colors.purple),
+              title: const Text('نسخ احتياطي واستعادة عبر الباركود (الكاميرا الأمامية/الخلفية)'),
+              onTap: () {},
+            ),
+            const Divider(height: 30),
+
+            const Text('التحكم بالواجهات والألوان', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 16)),
+            const ListTile(
+              title: Text('تحكم بألوان النصوص (الأسعار، التواريخ، الملاحظات، الديون)'),
+              subtitle: Text('تخصيص كامل لألوان الواجهة حسب رغبتك'),
+            ),
+            ListTile(
+              title: const Text('إدارة الأقسام (إضافة / حذف أقسام)'),
+              trailing: const Icon(Icons.edit),
+              onTap: () {},
+            ),
           ],
         ),
       ),
