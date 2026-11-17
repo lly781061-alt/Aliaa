@@ -13,8 +13,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -29,22 +27,13 @@ jobs:
           channel: 'stable'
           cache: false
 
-      - name: Recreate Android Project & Setup Firebase
+      - name: Build APK Release
         run: |
-          rm -rf android
-          flutter create . --org com.example --project-name store_app --platforms=android
-          
           # ضبط minSdkVersion إلى 21 لتوافق الحزم
           BUILD_GRADLE="android/app/build.gradle"
           if [ -f "$BUILD_GRADLE" ]; then
             sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' $BUILD_GRADLE
             sed -i 's/minSdkVersion 19/minSdkVersion 21/g' $BUILD_GRADLE
-          fi
-
-          # نسخ ملف فايربيس تلقائياً إلى مكانه الصحيح
-          if [ -f "google-services.json" ]; then
-            cp google-services.json android/app/google-services.json
-            echo "google-services.json restored successfully!"
           fi
 
           flutter pub get
