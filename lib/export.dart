@@ -46,10 +46,10 @@ class QRScanScreen extends StatefulWidget {
   const QRScanScreen({super.key, required this.storeData});
 
   @override
-  State<QRScanScreen> createState() => _QRScanScreenState();
+  State<QRScanScreen> createState() => _QRScanScreenScreenState();
 }
 
-class _QRScanScreenState extends State<QRScanScreen> {
+class _QRScanScreenScreenState extends State<QRScanScreen> {
   bool scanned = false;
 
   @override
@@ -146,7 +146,11 @@ class _GoogleDriveSyncScreenState extends State<GoogleDriveSyncScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(color: Colors.blue, borderRadius: BorderRadius.circular(8)),
-                    child: const Text('مزامنة قاعدة البيانات على (جوجل درايف)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, textAlign: TextAlign.center)),
+                    child: const Text(
+                      'مزامنة قاعدة البيانات على (جوجل درايف)',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Row(
@@ -195,7 +199,11 @@ class _GoogleDriveSyncScreenState extends State<GoogleDriveSyncScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(color: Colors.blue, borderRadius: BorderRadius.circular(8)),
-                    child: const Text('الحفظ التلقائي للبيانات يومياً (في)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, textAlign: TextAlign.center)),
+                    child: const Text(
+                      'الحفظ التلقائي للبيانات يومياً (في)',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Row(
