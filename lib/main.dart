@@ -40,12 +40,12 @@ class StoreMainScreen extends StatefulWidget {
 class _StoreMainScreenState extends State<StoreMainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = const [
-    SaleScreen(),
-    InventoryScreen(),
-    DebtsScreen(),
-    RentalsScreen(),
-    ReportsScreen(),
+  final List<Widget> _screens = [
+    const SaleScreen(),
+    const InventoryScreen(),
+    const DebtsScreen(),
+    const RentalsScreen(),
+    const ReportsScreen(),
   ];
 
   void _openSettings(BuildContext context) {
@@ -253,4 +253,139 @@ class DebtsScreen extends StatelessWidget {
           const SizedBox(height: 12),
           Card(
             child: ListTile(
-              leading: const CircleAvatar(backgroundColor: Colors.blue, child: Icon(Icons.person, color: Colors.white
+              leading: const CircleAvatar(backgroundColor: Colors.blue, child: Icon(Icons.person, color: Colors.white)),
+              title: const Text('علي عدنان', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text('الهاتف: لا يوجد'),
+              trailing: const Text('100,000 د.ع', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+              onTap: () {},
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class RentalsScreen extends StatelessWidget {
+  const RentalsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(12.0),
+      child: ListView(
+        children: [
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+            onPressed: () {},
+            icon: const Icon(Icons.add),
+            label: const Text('إيجار جديد'),
+          ),
+          const SizedBox(height: 10),
+          const Text('قيد الإيجار (0)', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 5),
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(child: Text('لا توجد إيجارات نشطة حالياً', style: TextStyle(color: Colors.grey))),
+            ),
+          ),
+          const SizedBox(height: 15),
+          const Text('المعدات المتاحة', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 5),
+          Card(
+            child: ListTile(
+              title: const Text('سقالة حديد', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text('2,000 د.ع / يوم'),
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(color: Colors.green[100], borderRadius: BorderRadius.circular(8)),
+                child: const Text('متاح 30 من 30', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              title: const Text('خلاطة كونكريت', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text('15,000 د.ع / يوم'),
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(color: Colors.green[100], borderRadius: BorderRadius.circular(8)),
+                child: const Text('متاح 3 من 3', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ReportsScreen extends StatelessWidget {
+  const ReportsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text('تقارير المبيعات والأرباح', style: TextStyle(fontSize: 16, color: Colors.grey)),
+    );
+  }
+}
+
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('الإعدادات الشاملة ومزامنة الهواتف', style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFFE65100),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16.0),
+        children: [
+          const Text('بيانات المحل', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 16)),
+          const TextField(decoration: InputDecoration(labelText: 'اسم المحل', hintText: 'محل الكهربائيات والإنشائيات')),
+          const TextField(decoration: InputDecoration(labelText: 'رقم هاتف المحل')),
+          const TextField(decoration: InputDecoration(labelText: 'العنوان')),
+          const TextField(decoration: InputDecoration(labelText: 'العملة', hintText: 'د.ع')),
+          const SizedBox(height: 20),
+          const Text('تخصيص ألوان الواجهة', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 16)),
+          const ListTile(title: Text('لون الاسم (للعملاء والمعدات)'), subtitle: Text('أسود داكن')),
+          const ListTile(title: Text('لون التاريخ وتفاصيل الإيجار'), subtitle: Text('رمادي')),
+          const ListTile(title: Text('لون حالة الاستلام (مستلم)'), subtitle: Text('أخضر زاهي')),
+          const SizedBox(height: 20),
+          const Text('النسخ الاحتياطي والمزامنة بين الهواتف', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 16)),
+          const SizedBox(height: 10),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.amber[700], foregroundColor: Colors.white, padding: const EdgeInsets.all(12)),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('توليد باركود للمزامنة الفورية')));
+            },
+            icon: const Icon(Icons.qr_code),
+            label: const Text('توليد باركود للمزامنة الفورية مع الهاتف الثاني'),
+          ),
+          const SizedBox(height: 10),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey, foregroundColor: Colors.white, padding: const EdgeInsets.all(12)),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('مسح باركود لاستعادة البيانات')));
+            },
+            icon: const Icon(Icons.qr_code_scanner),
+            label: const Text('مسح باركود لاستعادة ونقل البيانات للهاتف الحالي'),
+          ),
+          const SizedBox(height: 10),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white, padding: const EdgeInsets.all(12)),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('مزامنة لحظية عبر Google Drive')));
+            },
+            icon: const Icon(Icons.cloud_sync),
+            label: const Text('مزامنة لحظية عبر Google Drive / السحابة'),
+          ),
+        ],
+      ),
+    );
+  }
+}
