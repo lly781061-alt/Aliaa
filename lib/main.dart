@@ -257,11 +257,15 @@ class DebtsScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(color: Colors.blue[800], borderRadius: BorderRadius.circular(12)),
-            child: const Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+              children: const [
                 Text('إجمالي الديون المستحقة\n100,000 د.ع', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                Text('المديونون\n1', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, textAlign: TextAlign.center)),
+                Text(
+                  'المديونون\n1',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
               ],
             ),
           ),
