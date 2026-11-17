@@ -1,16 +1,17 @@
-name: Build Android APK
+name: Build APK
 
 on:
   push:
-    branches: [ main, master ]
-  workflow_dispatch:
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -22,25 +23,9 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.19.6'
-          channel: 'stable'
           cache: true
 
-      - name: Generate Modern Android Files
-        run: flutter create --project-name store_app --platforms=android .
-
-      - name: Upgrade Gradle Wrapper to avoid 429 errors
-        run: |
-          echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-all.zip" > android/gradle/wrapper/gradle-wrapper.properties
-
-      - name: Add Camera Permission for QR Scanner
-        run: |
-          sed -i 's/<application/<uses-permission android:name="android.permission.CAMERA"\/>\n    <application/' android/app/src/main/AndroidManifest.xml
-
-      - name: Fix minSdk to 21 for mobile_scanner
-        run: |
-          sed -i 's/minSdkVersion.*/minSdkVersion 21/g' android/app/build.gradle
-
-      - name: Install Dependencies
+      - name: Get Flutter packages
         run: flutter pub get
 
       - name: Build APK
@@ -49,5 +34,5 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: shop-pro-apk
+          name: store-pro-apk
           path: build/app/outputs/flutter-apk/app-release.apk
