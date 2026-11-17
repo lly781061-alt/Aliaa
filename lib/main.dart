@@ -37,7 +37,6 @@ class HomeScreen extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        else: Container(),
         child: GridView.count(
           crossAxisCount: 2,
           crossAxisSpacing: 16,
