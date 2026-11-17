@@ -1318,7 +1318,7 @@ class ReportsScreen extends StatelessWidget {
   }
 }
 
-// شاشة الإعدادات الشاملة (تصحيح حقول إدخال بيانات المحل وتوسيع الألوان)
+// شاشة الإعدادات الشاملة (تضمين خيارات الباركود ومزامنة Google Drive الجديدة)
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -1428,10 +1428,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(45)),
                     icon: const Icon(Icons.cloud_sync, color: Colors.teal),
-                    label: const Text('مزامنة لحظية عبر Google Drive / السحابة'),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تمت مزامنة البيانات السحابية بنجاح على نفس الحساب!')));
-                    },
+                    label: const Text('مزامنة البيانات على جوجل درايف (اختر الحساب والخيارات)'),
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => GoogleDriveSyncScreen(storeData: store))),
                   ),
                 ],
               ),
