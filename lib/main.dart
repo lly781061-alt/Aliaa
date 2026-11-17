@@ -40,12 +40,12 @@ class StoreMainScreen extends StatefulWidget {
 class _StoreMainScreenState extends State<StoreMainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _screens = [
-    const SaleScreen(),
-    const InventoryScreen(),
-    const DebtsScreen(),
-    const RentalsScreen(),
-    const ReportsScreen(),
+  final List<Widget> _screens = const [
+    SaleScreen(),
+    InventoryScreen(),
+    DebtsScreen(),
+    RentalsScreen(),
+    ReportsScreen(),
   ];
 
   void _openSettings(BuildContext context) {
@@ -92,7 +92,6 @@ class _StoreMainScreenState extends State<StoreMainScreen> {
   }
 }
 
-// 1. شاشة البيع
 class SaleScreen extends StatelessWidget {
   const SaleScreen({super.key});
 
@@ -185,7 +184,6 @@ class SaleScreen extends StatelessWidget {
   }
 }
 
-// 2. شاشة المخزن
 class InventoryScreen extends StatelessWidget {
   const InventoryScreen({super.key});
 
@@ -221,7 +219,6 @@ class InventoryScreen extends StatelessWidget {
   }
 }
 
-// 3. شاشة الديون
 class DebtsScreen extends StatelessWidget {
   const DebtsScreen({super.key});
 
@@ -256,29 +253,4 @@ class DebtsScreen extends StatelessWidget {
           const SizedBox(height: 12),
           Card(
             child: ListTile(
-              leading: const CircleAvatar(backgroundColor: Colors.blue, child: Icon(Icons.person, color: Colors.white)),
-              title: const Text('علي عدنان', style: TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: const Text('الهاتف: لا يوجد'),
-              trailing: const Text('100,000 د.ع', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
-              onTap: () {},
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// 4. شاشة الإيجار
-class RentalsScreen extends StatelessWidget {
-  const RentalsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(12.0),
-      child: ListView(
-        children: [
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
-            onPressed: () {},
+              leading: const CircleAvatar(backgroundColor: Colors.blue, child: Icon(Icons.person, color: Colors.white
