@@ -29,10 +29,18 @@ jobs:
           channel: 'stable'
           cache: false
 
-      - name: Recreate Android V2 Platform & Build
+      - name: Recreate Android Project & Fix MinSdk
         run: |
           rm -rf android
           flutter create . --org com.example --project-name store_app --platforms=android
+          
+          # رفع الـ minSdkVersion إلى 21 ليتوافق مع mobile_scanner
+          BUILD_GRADLE="android/app/build.gradle"
+          if [ -f "$BUILD_GRADLE" ]; then
+            sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' $BUILD_GRADLE
+            sed -i 's/minSdkVersion 19/minSdkVersion 21/g' $BUILD_GRADLE
+          fi
+          
           flutter pub get
           flutter build apk --release
 
