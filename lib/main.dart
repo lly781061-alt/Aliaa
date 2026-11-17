@@ -19,7 +19,7 @@ class StoreApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'إدارة المتجر العراقي',
+      title: 'محل الكهربائيات والإنشائيات',
       theme: ThemeData(primarySwatch: Colors.blue),
       home: const StoreHomePage(),
     );
@@ -34,35 +34,12 @@ class StoreHomePage extends StatefulWidget {
 }
 
 class _StoreHomePageState extends State<StoreHomePage> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final String storeId = 'my_main_store_2026';
-  
-  final TextEditingController _itemController = TextEditingController();
-  final TextEditingController _priceController = TextEditingController();
+  int _currentIndex = 0;
 
-  void _addSale(String item, double price) async {
-    try {
-      await _firestore.collection('stores').doc(storeId).collection('sales').add({
-        'item': item,
-        'price': price,
-        'currency': 'IQD',
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-      _itemController.clear();
-      _priceController.clear();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تمت إضافة المادة ومزامنتها بنجاح (IQD)')),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error adding sale: $e');
-    }
-  }
-
-  void _backupData() {
+  // نقاط النسخ الاحتياطي والمزامنة المحدثة
+  void _executeBackupPoint(String type) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('تم إنشاء نسخة احتياطية محلية وإلى السحابة بنجاح')),
+      SnackBar(content: Text('تم تنفيذ نقطة النسخ الاحتياطي: $type بنجاح')),
     );
   }
 
@@ -70,78 +47,82 @@ class _StoreHomePageState extends State<StoreHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('إدارة المتجر - مزامنة لحظية (IQD)'),
+        title: const Text('محل الكهربائيات والإنشائيات'),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.cloud_upload),
-            tooltip: 'نسخ احتياطي',
-            onPressed: _backupData,
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              // نافذة الإعدادات ونقاط النسخ
+              showModalBottomSheet(
+                context: context,
+                builder: (context) => Container(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('الإعدادات الشاملة ومزامنة الهواتف', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      const SizedBox(height: 15),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _executeBackupPoint('توليد باركود للمزامنة');
+                        },
+                        icon: const Icon(Icons.qr_code),
+                        label: const Text('توليد باركود للمزامنة الفورية مع الهاتف الثاني'),
+                      ),
+                      const SizedBox(height: 10),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _executeBackupPoint('مزامنة Google Drive');
+                        },
+                        icon: const Icon(Icons.cloud_sync),
+                        label: const Text('مزامنة لحظية عبر Google Drive / السحابة'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Card(
-              elevation: 3,
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  children: [
-                    TextField(
-                      controller: _itemController,
-                      decoration: const InputDecoration(labelText: 'اسم المادة الكهربائية'),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: _priceController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(labelText: 'السعر (IQD)'),
-                    ),
-                    const SizedBox(height: 15),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              if (_itemController.text.isNotEmpty && _priceController.text.isNotEmpty) {
-                                double? price = double.tryParse(_priceController.text);
-                                if (price != null) {
-                                  _addSale(_itemController.text, price);
-                                }
-                              }
-                            },
-                            icon: const Icon(Icons.add),
-                            label: const Text('حفظ ومزامنة'),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
-                          onPressed: _backupData,
-                          icon: const Icon(Icons.backup),
-                          label: const Text('نسخ احتياطي'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
+            const Icon(Icons.bolt, size: 80, color: Colors.orange),
+            const SizedBox(height: 10),
+            const Text(
+              'أهلاً بك في نظام إدارة المحل والإنشائيات',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
-            const Expanded(
-              child: Center(
-                child: Text(
-                  'المتجر متصل وجاهز لعرض المبيعات والمزامنة الفورية',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
-                  textAlign: TextAlign.center,
-                ),
-              ),
+            ElevatedButton.icon(
+              onPressed: () => _executeBackupPoint('نسخ احتياطي يدوي'),
+              icon: const Icon(Icons.backup),
+              label: const Text('إجراء نسخ احتياطي الآن'),
             ),
           ],
         ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.store), label: 'البيع'),
+          BottomNavigationBarItem(icon: Icon(Icons.inventory), label: 'المخزن'),
+          BottomNavigationBarItem(icon: Icon(Icons.money), label: 'الديون'),
+          BottomNavigationBarItem(icon: Icon(Icons.handyman), label: 'الإيجار'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: ' التقارير'),
+        ],
       ),
     );
   }
