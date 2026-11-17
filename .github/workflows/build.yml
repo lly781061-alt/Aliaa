@@ -24,8 +24,9 @@ jobs:
           flutter-version: '3.19.6'
           channel: 'stable'
 
-      - name: Recreate Android Project & Dependencies
+      - name: Clean and Recreate Android Folder
         run: |
+          rm -rf android
           flutter create . --org com.example --project-name store_app --platforms android
           flutter pub get
 
