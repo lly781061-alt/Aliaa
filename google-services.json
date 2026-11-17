@@ -1,0 +1,28 @@
+"project_info": {
+    "project_number": "594316996571",
+    "project_id": "storeapp-472cb",
+    "storage_bucket": "storeapp-472cb.firebasestorage.app"
+  },
+  «الميل»: [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:594316996571:android:1b81dc84a58d928980c1fe",
+        "android_client_info": {
+          "package_name": "com.example.store_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcivpvDQTrskV1_cRdRAJDhm1VeoKhHTI"
+        }
+      ],
+      "المهارات": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
