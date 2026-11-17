@@ -1,14 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await Firebase.initializeApp();
-  } catch (e) {
-    debugPrint("Firebase init error: $e");
+  await Firebase.initializeApp();
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => StoreProvider()),
+      ],
+      child: const StoreApp(),
+    ),
+  );
+}
+
+class StoreProvider with ChangeNotifier {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final String storeId = 'my_main_store_2026';
+
+  List> _sales = [];
+  List> get sales => _sales;
+
+  StoreProvider() {
+    _initSync();
   }
-  runApp(const StoreApp());
+
+  void _initSync() {
+    _firestore.collection('stores').doc(storeId).collection('sales').snapshots().listen((snapshot) {
+      _sales = snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
+      notifyListeners();
+    });
+  }
+
+  Future<void> addSale(String itemName, double price) async {
+    await _firestore.collection('stores').doc(storeId).collection('sales').add({
+      'item': itemName,
+      'price': price,
+      'currency': 'IQD',
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
 }
 
 class StoreApp extends StatelessWidget {
@@ -16,88 +53,92 @@ class StoreApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: SalesScreen(),
+      title: 'إدارة المتجر العراقي',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: const StoreHomePage(),
     );
   }
 }
 
-class SalesScreen extends StatefulWidget {
-  const SalesScreen({super.key});
+class StoreHomePage extends StatefulWidget {
+  const StoreHomePage({super.key});
 
   @override
-  State<SalesScreen> createState() => _SalesScreenState();
+  State<StoreHomePage> createState() => _StoreHomePageState();
 }
 
-class _SalesScreenState extends State<SalesScreen> {
-  final TextEditingController _nameController = TextEditingController();
+class _StoreHomePageState extends State<StoreHomePage> {
+  final TextEditingController _itemController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
-  final List> _sales = [];
-
-  void _addSale() {
-    if (_nameController.text.isNotEmpty && _priceController.text.isNotEmpty) {
-      setState(() {
-        _sales.add({
-          'name': _nameController.text,
-          'price': _priceController.text,
-        });
-      });
-      _nameController.clear();
-      _priceController.clear();
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
+    final storeProvider = Provider.of<StoreProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('إدارة المتجر - المبيعات (IQD)'),
+        title: const Text('إدارة المتجر - مزامنة لحظية (IQD)'),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'اسم المادة / الصنف',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _priceController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'السعر (دينار عراقي)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton.icon(
-              onPressed: _addSale,
-              icon: const Icon(Icons.add),
-              label: const Text('إضافة مبيعة'),
-              style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(45)),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _sales.length,
-                itemBuilder: (context, index) {
-                  return Card(
-                    child: ListTile(
-                      title: Text(_sales[index]['name'] ?? ''),
-                      trailing: Text('${_sales[index]['price']} IQD'),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Card(
+              elevation: 4,
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _itemController,
+                      decoration: const InputDecoration(labelText: 'اسم المادة الكهربائية'),
                     ),
-                  );
-                },
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _priceController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'السعر (بالمواليد / IQD)'),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        if (_itemController.text.isNotEmpty && _priceController.text.isNotEmpty) {
+                          double? price = double.tryParse(_priceController.text);
+                          if (price != null) {
+                            storeProvider.addSale(_itemController.text, price);
+                            _itemController.clear();
+                            _priceController.clear();
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('إضافة بيع ومزامنة'),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+          Expanded(
+            child: storeProvider.sales.isEmpty
+                .isEmpty // fallback handled gracefully
+                ? const Center(child: Text('لا توجد مبيعات مسجلة حتى الآن'))
+                : ListView.builder(
+                    itemCount: storeProvider.sales.length,
+                    itemBuilder: (context, index) {
+                      final sale = storeProvider.sales[index];
+                      return ListTile(
+                        leading: const CircleAvatar(child: Icon(Icons.bolt)),
+                        title: Text(sale['item'] ?? ''),
+                        trailing: Text('${sale['price']} IQD', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }
