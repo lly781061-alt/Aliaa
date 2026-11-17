@@ -1,14 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  try {
-    await Firebase.initializeApp();
-  } catch (e) {
-    debugPrint('Firebase Init Error: $e');
-  }
   runApp(const StoreApp());
 }
 
@@ -34,29 +27,20 @@ class StoreHomePage extends StatefulWidget {
 }
 
 class _StoreHomePageState extends State<StoreHomePage> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final String storeId = 'my_main_store_2026';
-  
   final TextEditingController _itemController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
+  final List> _sales = [];
 
-  void _addSale(String item, double price) async {
-    try {
-      await _firestore.collection('stores').doc(storeId).collection('sales').add({
-        'item': item,
-        'price': price,
-        'currency': 'IQD',
-        'timestamp': FieldValue.serverTimestamp(),
+  void _addSale() {
+    if (_itemController.text.isNotEmpty && _priceController.text.isNotEmpty) {
+      setState(() {
+        _sales.add({
+          'item': _itemController.text,
+          'price': _priceController.text,
+        });
       });
       _itemController.clear();
       _priceController.clear();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تمت إضافة المادة ومزامنتها بنجاح')),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error adding sale: $e');
     }
   }
 
@@ -64,7 +48,7 @@ class _StoreHomePageState extends State<StoreHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('إدارة المتجر - مزامنة لحظية (IQD)'),
+        title: const Text('إدارة المتجر - العراق (IQD)'),
         centerTitle: true,
       ),
       body: Padding(
@@ -75,33 +59,35 @@ class _StoreHomePageState extends State<StoreHomePage> {
               controller: _itemController,
               decoration: const InputDecoration(labelText: 'اسم المادة الكهربائية'),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             TextField(
               controller: _priceController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: 'السعر (IQD)'),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 15),
             ElevatedButton.icon(
-              onPressed: () {
-                if (_itemController.text.isNotEmpty && _priceController.text.isNotEmpty) {
-                  double? price = double.tryParse(_priceController.text);
-                  if (price != null) {
-                    _addSale(_itemController.text, price);
-                  }
-                }
-              },
+              onPressed: _addSale,
               icon: const Icon(Icons.add),
-              label: const Text('حفظ ومزامنة فورية'),
+              label: const Text('إضافة مادة للمتجر'),
             ),
             const SizedBox(height: 20),
-            const Expanded(
-              child: Center(
-                child: Text(
-                  'المتجر متصل بقاعدة بيانات فايربيس بنجاح',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
-                ),
-              ),
+            Expanded(
+              child: _sales.isEmpty
+                  ? const Center(child: Text('لا توجد مبيعات مسجلة حتى الآن'))
+                  : ListView.builder(
+                      itemCount: _sales.length,
+                      itemBuilder: (context, index) {
+                        return ListTile(
+                          leading: const CircleAvatar(child: Icon(Icons.bolt)),
+                          title: Text(_sales[index]['item']!),
+                          trailing: Text('${_sales[index]['price']} IQD',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.green)),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
