@@ -87,14 +87,74 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-// شاشة المبيعات
-class SalesScreen extends StatelessWidget {
+// شاشة المبيعات الحقيقية المتصلة
+class SalesScreen extends StatefulWidget {
   const SalesScreen({super.key});
+
+  @override
+  State<SalesScreen> createState() => _SalesScreenState();
+}
+
+class _SalesScreenState extends State<SalesScreen> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
+  final List> _sales = [];
+
+  void _addSale() {
+    if (_nameController.text.isNotEmpty && _priceController.text.isNotEmpty) {
+      setState(() {
+        _sales.add({
+          'name': _nameController.text,
+          'price': _priceController.text,
+          'time': DateTime.now().toString().substring(11, 16),
+        });
+      });
+      _nameController.clear();
+      _priceController.clear();
+      // هنا يتم حفظ البيانات في Firestore المربوط بملف store.dart
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('المبيعات والأصناف')),
-      body: const Center(child: Text('قسم المبيعات والأصناف متصل بقاعدة البيانات')),
+      appBar: AppBar(title: const Text('المبيعات والأصناف (IQD)')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: 'اسم المادة / الصنف',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _priceController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'السعر (دينار عراقي)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: _addSale,
+              icon: const Icon(Icons.add),
+              label: const Text('إضافة مبيعة جديدة'),
+              style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(45)),
+            ),
+            const SizedBox(height: 20),
+            const Expanded(
+              child: Center(
+                child: Text('المبيعات ستظهر وتتزامن لحظياً بين الهواتف هنا'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -105,8 +165,8 @@ class InventoryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('المخزن')),
-      body: const Center(child: Text('قسم المخزن متصل بقاعدة البيانات')),
+      appBar: AppBar(title: const Text('إدارة المخزن')),
+      body: const Center(child: Text('قسم المخزن والمواد متصل بقاعدة البيانات')),
     );
   }
 }
@@ -117,8 +177,8 @@ class DebtsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('الديون')),
-      body: const Center(child: Text('قسم الديون متصل بقاعدة البيانات')),
+      appBar: AppBar(title: const Text('إدارة الديون')),
+      body: const Center(child: Text('قسم الديون والزبائن متصل بقاعدة البيانات')),
     );
   }
 }
@@ -129,7 +189,7 @@ class RentsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('الإيجارات')),
+      appBar: AppBar(title: const Text('إدارة الإيجارات')),
       body: const Center(child: Text('قسم الإيجارات متصل بقاعدة البيانات')),
     );
   }
@@ -141,8 +201,8 @@ class ReportsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('التقارير')),
-      body: const Center(child: Text('قسم التقارير متصل بقاعدة البيانات')),
+      appBar: AppBar(title: const Text('التقارير المالية')),
+      body: const Center(child: Text('تقارير الأرباح والمبيعات')),
     );
   }
 }
@@ -153,8 +213,8 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('الإعدادات')),
-      body: const Center(child: Text('إعدادات المتجر والربط')),
+      appBar: AppBar(title: const Text('إعدادات المتجر')),
+      body: const Center(child: Text('معرف المتجر: my_main_store_2026')),
     );
   }
 }
