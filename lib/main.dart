@@ -48,60 +48,71 @@ class _StoreMainScreenState extends State<StoreMainScreen> {
     const ReportsScreen(),
   ];
 
-  void _showSettingsModal(BuildContext context) {
+  // نافذة الإعدادات الشاملة ومزامنة الهواتف والنسخ الاحتياطي (المطابقة للصور)
+  void _showFullSettings(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => Container(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'الإعدادات الشاملة ومزامنة الهواتف',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF57C00), foregroundColor: Colors.white),
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('تم تحديث نقطة توليد باركود المزامنة الفورية بنجاح')),
-                );
-              },
-              icon: const Icon(Icons.qr_code),
-              label: const Text('توليد باركود للمزامنة الفورية مع الهاتف الثاني'),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey, foregroundColor: Colors.white),
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('تم تحديث نقطة مسح الباركود لاستعادة البيانات')),
-                );
-              },
-              icon: const Icon(Icons.qr_code_scanner),
-              label: const Text('مسح باركود لاستعادة ونقل البيانات للهاتف الحالي'),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('تم تحديث نقطة مزامنة Google Drive / السحابة بنجاح')),
-                );
-              },
-              icon: const Icon(Icons.cloud_sync),
-              label: const Text('مزامنة لحظية عبر Google Drive / السحابة'),
-            ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'الإعدادات الشاملة ومزامنة الهواتف',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              // بيانات المحل
+              const Text('بيانات المحل', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+              const TextField(decoration: InputDecoration(labelText: 'اسم المحل', hintText: 'محل الكهربائيات والإنشائيات')),
+              const TextField(decoration: InputDecoration(labelText: 'رقم هاتف المحل')),
+              const TextField(decoration: InputDecoration(labelText: 'العنوان')),
+              const TextField(decoration: InputDecoration(labelText: 'العملة', hintText: 'د.ع')),
+              const SizedBox(height: 20),
+              // النسخ الاحتياطي والمزامنة بين الهواتف
+              const Text('النسخ الاحتياطي والمزامنة بين الهواتف', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+              const SizedBox(height: 10),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.amber[700], foregroundColor: Colors.white),
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('جاري توليد باركود للمزامنة الفورية مع الهاتف الثاني...')),
+                  );
+                },
+                icon: const Icon(Icons.qr_code),
+                label: const Text('توليد باركود للمزامنة الفورية مع الهاتف الثاني'),
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey, foregroundColor: Colors.white),
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('جاري فتح مسح الباركود لاستعادة البيانات...')),
+                  );
+                },
+                icon: const Icon(Icons.qr_code_scanner),
+                label: const Text('مسح باركود لاستعادة ونقل البيانات للهاتف الحالي'),
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('جاري إتمام المزامنة اللحظية عبر Google Drive / السحابة...')),
+                  );
+                },
+                icon: const Icon(Icons.cloud_sync),
+                label: const Text('مزامنة لحظية عبر Google Drive / السحابة'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -117,7 +128,7 @@ class _StoreMainScreenState extends State<StoreMainScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings, color: Colors.white),
-            onPressed: () => _showSettingsModal(context),
+            onPressed: () => _showFullSettings(context),
           ),
         ],
       ),
@@ -144,6 +155,7 @@ class _StoreMainScreenState extends State<StoreMainScreen> {
   }
 }
 
+// 1. شاشة البيع
 class SaleScreen extends StatelessWidget {
   const SaleScreen({super.key});
 
@@ -216,6 +228,7 @@ class SaleScreen extends StatelessWidget {
   }
 }
 
+// 2. شاشة المخزن
 class InventoryScreen extends StatelessWidget {
   const InventoryScreen({super.key});
 
@@ -244,6 +257,7 @@ class InventoryScreen extends StatelessWidget {
   }
 }
 
+// 3. شاشة الديون
 class DebtsScreen extends StatelessWidget {
   const DebtsScreen({super.key});
 
@@ -275,6 +289,7 @@ class DebtsScreen extends StatelessWidget {
   }
 }
 
+// 4. شاشة الإيجار
 class RentalsScreen extends StatelessWidget {
   const RentalsScreen({super.key});
 
@@ -301,6 +316,7 @@ class RentalsScreen extends StatelessWidget {
   }
 }
 
+// 5. شاشة التقارير
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
 
