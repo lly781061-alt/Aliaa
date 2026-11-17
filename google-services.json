@@ -3,7 +3,7 @@
     "project_id": "storeapp-472cb",
     "storage_bucket": "storeapp-472cb.firebasestorage.app"
   },
-  «الميل»: [
+  "client": [
     {
       "client_info": {
         "mobilesdk_app_id": "1:594316996571:android:1b81dc84a58d928980c1fe",
@@ -17,7 +17,7 @@
           "current_key": "AIzaSyAcivpvDQTrskV1_cRdRAJDhm1VeoKhHTI"
         }
       ],
-      "المهارات": {
+      "services": {
         "appinvite_service": {
           "other_platform_oauth_client": []
         }
