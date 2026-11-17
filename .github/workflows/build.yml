@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -27,9 +29,27 @@ jobs:
           channel: 'stable'
           cache: false
 
-      - name: Build APK Release
+      - name: Recreate Android Project with v2 Embedding & Restore Firebase
         run: |
-          # ضبط minSdkVersion إلى 21 لتوافق الحزم
+          # حفظ نسخة احتياطية من ملف فايربيس إذا كان موجوداً قبل الحذف
+          if [ -f "android/app/google-services.json" ]; then
+            cp android/app/google-services.json /tmp/google-services.json
+          elif [ -f "google-services.json" ]; then
+            cp google-services.json /tmp/google-services.json
+          fi
+
+          # إعادة إنشاء مجلد الأندرويد بدعم v2 Embedding الحديث لتوافق Cloud Firestore
+          rm -rf android
+          flutter create . --org com.example --project-name store_app --platforms=android
+
+          # استعادة ملف فايربيس إلى مكانه الصحيح
+          mkdir -p android/app
+          if [ -f "/tmp/google-services.json" ]; then
+            cp /tmp/google-services.json android/app/google-services.json
+            echo "google-services.json restored successfully!"
+          fi
+
+          # ضبط minSdkVersion إلى 21 لتوافق الحزم (cloud_firestore و mobile_scanner)
           BUILD_GRADLE="android/app/build.gradle"
           if [ -f "$BUILD_GRADLE" ]; then
             sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' $BUILD_GRADLE
