@@ -187,7 +187,6 @@ class GlobalSearchResults extends StatelessWidget {
   }
 }
 
-// شاشة نقطة البيع السريع (مرتبطة بالمخزن بالكامل مع زر + للكميات)
 class SalesScreen extends StatefulWidget {
   const SalesScreen({super.key});
   @override
@@ -196,7 +195,7 @@ class SalesScreen extends StatefulWidget {
 
 class _SalesScreenState extends State<SalesScreen> {
   String search = '';
-  Map<String, int> cart = {}; // itemId -> count
+  Map<String, int> cart = {};
 
   @override
   Widget build(BuildContext context) {
@@ -295,7 +294,6 @@ class _SalesScreenState extends State<SalesScreen> {
   }
 }
 
-// المخزن
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
   @override
@@ -465,7 +463,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 }
 
-// الديون
 class DebtsScreen extends StatefulWidget {
   const DebtsScreen({super.key});
   @override
@@ -790,7 +787,7 @@ class _CustomerDebtDetailScreenState extends State<CustomerDebtDetailScreen> {
             ],
           ),
           const Divider(height: 30),
-          const Text('الحركات', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const Text('الحركات (انقر على أي حركة لتعديلها أو حذفها)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 10),
           ...customer.transactions.map((t) {
             return Card(
@@ -800,9 +797,50 @@ class _CustomerDebtDetailScreenState extends State<CustomerDebtDetailScreen> {
                 subtitle: Text('${t.date}${t.note.isNotEmpty ? " · ${t.note}" : ""}'),
                 trailing: Text('${t.isPayment ? "-" : "+"}${formatCurrency(t.amount)} ${store.currencySymbol}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: t.isPayment ? Colors.red : Colors.blue)),
                 leading: Icon(t.isPayment ? Icons.arrow_downward : Icons.arrow_upward, color: t.isPayment ? Colors.red : Colors.blue),
+                onTap: () => _showEditTransactionDialog(context, store, customer.id, t),
               ),
             );
           }),
+        ],
+      ),
+    );
+  }
+
+  void _showEditTransactionDialog(BuildContext context, StoreData store, String customerId, DebtTransaction t) {
+    final amtC = TextEditingController(text: t.amount.toString());
+    final noteC = TextEditingController(text: t.note);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تعديل أو حذف الحركة'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: amtC, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'المبلغ')),
+            TextField(controller: noteC, decoration: const InputDecoration(labelText: 'الملاحظة')),
+          ],
+        ),
+        actions: [
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () {
+              store.removeTransaction(customerId, t.id);
+              Navigator.pop(context);
+              setState(() {});
+            },
+            child: const Text('حذف الحركة'),
+          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          ElevatedButton(
+            onPressed: () {
+              double newAmt = double.tryParse(amtC.text) ?? t.amount;
+              store.updateTransaction(customerId, t.id, newAmt, noteC.text);
+              Navigator.pop(context);
+              setState(() {});
+            },
+            child: const Text('حفظ التعديل'),
+          ),
         ],
       ),
     );
@@ -864,7 +902,7 @@ class _CustomerDebtDetailScreenState extends State<CustomerDebtDetailScreen> {
   }
 }
 
-// الإيجار (مع الاحتفاظ بكافة التفاصيل للتسليم والمنتهية والتحكم بألوان الاسم والتاريخ)
+// الإيجار
 class RentsScreen extends StatefulWidget {
   const RentsScreen({super.key});
   @override
@@ -950,6 +988,7 @@ class _RentsScreenState extends State<RentsScreen> {
                     ),
                   ],
                 ),
+                onTap: () => _showEditActiveRentalDialog(context, store, r),
               ),
             );
           }),
@@ -977,7 +1016,7 @@ class _RentsScreenState extends State<RentsScreen> {
           }),
 
           const SizedBox(height: 20),
-          const Text('سجل الإيجارات المنتهية', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const Text('سجل الإيجارات المنتهية (انقر على الاسم لعرض التفاصيل الكاملة)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 8),
           TextField(
             decoration: InputDecoration(
@@ -992,7 +1031,6 @@ class _RentsScreenState extends State<RentsScreen> {
           const SizedBox(height: 8),
           if (returnedRents.isEmpty)
             const Padding(padding: EdgeInsets.all(8.0), child: Text('لا يوجد سجل مطابق', style: TextStyle(color: Colors.grey))),
-          // الاحتفاظ بكافة التفاصيل التاريخ والهاتف وكلشي عند التسجيل بالأسفل
           ...returnedRents.map((r) => Card(
             margin: const EdgeInsets.symmetric(vertical: 4),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1000,8 +1038,70 @@ class _RentsScreenState extends State<RentsScreen> {
               title: Text('${r.equipmentName} × ${r.count}', style: TextStyle(fontWeight: FontWeight.bold, color: store.nameColor == 'blue' ? Colors.blue : Colors.black87)),
               subtitle: Text('العميل: ${r.customerName} | الهاتف: ${r.phone.isEmpty ? "لا يوجد" : r.phone} | التاريخ: ${r.date} (منتهي)', style: TextStyle(color: store.dateColor == 'grey' ? Colors.grey.shade700 : Colors.black)),
               trailing: Text('مستلم', style: TextStyle(color: store.returnedColor == 'green' ? Colors.green : Colors.blue, fontWeight: FontWeight.bold)),
+              onTap: () => _showRentalDetailsDialog(context, r, store),
             ),
           )),
+        ],
+      ),
+    );
+  }
+
+  void _showRentalDetailsDialog(BuildContext context, ActiveRental r, StoreData store) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('تفاصيل إيجار: ${r.customerName}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('المعدة: ${r.equipmentName} × ${r.count}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 6),
+            Text('اسم العميل: ${r.customerName}'),
+            Text('رقم الهاتف: ${r.phone.isEmpty ? "لا يوجد" : r.phone}'),
+            Text('تاريخ الإيجار: ${r.date}'),
+            Text('ملاحظات: ${r.note.isEmpty ? "لا توجد" : r.note}'),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)),
+              child: const Text('الحالة: منتهي وتم الاستلام بنجاح', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إغلاق')),
+        ],
+      ),
+    );
+  }
+
+  void _showEditActiveRentalDialog(BuildContext context, StoreData store, ActiveRental r) {
+    final countC = TextEditingController(text: r.count.toString());
+    final noteC = TextEditingController(text: r.note);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('تعديل إيجار: ${r.customerName}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: countC, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'العدد المؤجر')),
+            TextField(controller: noteC, decoration: const InputDecoration(labelText: 'الملاحظة')),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          ElevatedButton(
+            onPressed: () {
+              int newCnt = int.tryParse(countC.text) ?? r.count;
+              store.updateRental(r.id, newCnt, noteC.text);
+              Navigator.pop(context);
+              setState(() {});
+            },
+            child: const Text('حفظ التعديل'),
+          ),
         ],
       ),
     );
@@ -1218,7 +1318,7 @@ class ReportsScreen extends StatelessWidget {
   }
 }
 
-// شاشة الإعدادات الشاملة (تتضمن ألوان الخطوط، والباركد، والمزامنة السحابية)
+// شاشة الإعدادات الشاملة (تصحيح حقول إدخال بيانات المحل وتوسيع الألوان)
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -1234,7 +1334,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final phoneC = TextEditingController(text: store.storePhone);
     final addressC = TextEditingController(text: store.storeAddress);
     final currencyC = TextEditingController(text: store.currencySymbol);
-    final newSectionC = TextEditingController();
 
     return Scaffold(
       appBar: AppBar(title: const Text('الإعدادات الشاملة ومزامنة الهواتف')),
