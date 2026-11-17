@@ -39,9 +39,8 @@ class StoreMainScreen extends StatefulWidget {
 
 class _StoreMainScreenState extends State<StoreMainScreen> {
   int _currentIndex = 0;
-  final TextEditingController _globalSearchController = TextEditingController();
 
-  // الأقسام بالترتيب المطلوب من اليمين: بيع، الديون، الإيجارات، المخزن، التقارير
+  // الأقسام مرتبة من اليمين لليسار: بيع (0)، الديون (1)، الإيجار (2)، المخزن (3)، التقارير (4)
   final List<Widget> _screens = const [
     SaleSectionScreen(),
     DebtsSectionScreen(),
@@ -49,6 +48,81 @@ class _StoreMainScreenState extends State<StoreMainScreen> {
     InventorySectionScreen(),
     ReportsSectionScreen(),
   ];
+
+  // نوافذ الحوار للاختصارات العلوية (إضافة صنف، إيجار جديد، دين جديد)
+  void _showAddItemDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('إضافة صنف جديد'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              TextField(decoration: InputDecoration(labelText: 'اسم الصنف (مثل: مصباح 40 واط)')),
+              TextField(decoration: InputDecoration(labelText: 'السعر (د.ع)')),
+              TextField(decoration: InputDecoration(labelText: 'الكمية المتوفرة')),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+            ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('حفظ')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showNewRentalDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('إيجار جديد'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              TextField(decoration: InputDecoration(labelText: 'المعدة (سقالة حديد، خلاطة...)')),
+              TextField(decoration: InputDecoration(labelText: 'العدد')),
+              TextField(decoration: InputDecoration(labelText: 'اسم المستأجر')),
+              TextField(decoration: InputDecoration(labelText: 'رقم هاتف المستأجر')),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+            ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('تأكيد الإيجار')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showNewDebtDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: const Text('دين جديد'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              TextField(decoration: InputDecoration(labelText: 'اسم العميل')),
+              TextField(decoration: InputDecoration(labelText: 'رقم الهاتف')),
+              TextField(decoration: InputDecoration(labelText: 'المبلغ (د.ع)')),
+              TextField(decoration: InputDecoration(labelText: 'ملاحظة')),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+            ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('حفظ الدين')),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,36 +133,36 @@ class _StoreMainScreenState extends State<StoreMainScreen> {
           title: const Text('محل الكهربائيات والإنشائيات', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           centerTitle: true,
           backgroundColor: const Color(0xFFE65100),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.settings, color: Colors.white),
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsSectionScreen()));
-              },
-            ),
-          ],
+          leading: IconButton(
+            icon: const Icon(Icons.settings, color: Colors.white),
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+            },
+          ),
         ),
         body: Column(
           children: [
-            // اختصارات علوية (صنف جديد، إيجار جديد، دين جديد)
+            // شريط الاختصارات العلوية المطابق للصورة (إضافة صنف، إيجار جديد، دين جديد)
             Container(
-              padding: const EdgeInsets.all(10),
-              color: Colors.orange[50],
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [Colors.purple.shade200, Colors.blue.shade200, Colors.teal.shade200]),
+              ),
               child: Row(
                 children: [
                   Expanded(
                     child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
-                      onPressed: () {},
-                      icon: const Icon(Icons.add, size: 16),
-                      label: const Text('صنف جديد', style: TextStyle(fontSize: 12)),
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7B1FA2), foregroundColor: Colors.white),
+                      onPressed: _showNewDebtDialog,
+                      icon: const Icon(Icons.money, size: 16),
+                      label: const Text('دين جديد', style: TextStyle(fontSize: 12)),
                     ),
                   ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
-                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1976D2), foregroundColor: Colors.white),
+                      onPressed: _showNewRentalDialog,
                       icon: const Icon(Icons.handyman, size: 16),
                       label: const Text('إيجار جديد', style: TextStyle(fontSize: 12)),
                     ),
@@ -96,39 +170,20 @@ class _StoreMainScreenState extends State<StoreMainScreen> {
                   const SizedBox(width: 6),
                   Expanded(
                     child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.purple, foregroundColor: Colors.white),
-                      onPressed: () {},
-                      icon: const Icon(Icons.money, size: 16),
-                      label: const Text('دين جديد', style: TextStyle(fontSize: 12)),
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00897B), foregroundColor: Colors.white),
+                      onPressed: _showAddItemDialog,
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('إضافة صنف', style: TextStyle(fontSize: 12)),
                     ),
                   ),
                 ],
               ),
             ),
-            // بحث عام في كل الأقسام
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: TextField(
-                controller: _globalSearchController,
-                decoration: InputDecoration(
-                  hintText: 'بحث عام في (المخزن، الديون، الإيجار، المبيعات)...',
-                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                ),
-                onChanged: (value) {
-                  // منطق البحث العام اللحظي
-                },
-              ),
-            ),
-            // محتوى الشاشة الحالية
-            Expanded(
-              child: _screens[_currentIndex],
-            ),
+            // محتوى القسم الحالي
+            Expanded(child: _screens[_currentIndex]),
           ],
         ),
-        // الأقسام من اليمين لليسار في الشريط السفلي
+        // الشريط السفلي للأقسام بالترتيب المطلوب من اليمين لليسار تماماً
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (index) {
@@ -142,7 +197,7 @@ class _StoreMainScreenState extends State<StoreMainScreen> {
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.point_of_sale), label: 'بيع'),
             BottomNavigationBarItem(icon: Icon(Icons.money), label: 'الديون'),
-            BottomNavigationBarItem(icon: Icon(Icons.handyman), label: 'الإيجارات'),
+            BottomNavigationBarItem(icon: Icon(Icons.handyman), label: 'الإيجار'),
             BottomNavigationBarItem(icon: Icon(Icons.inventory), label: 'المخزن'),
             BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'التقارير'),
           ],
@@ -162,16 +217,38 @@ class SaleSectionScreen extends StatelessWidget {
       padding: const EdgeInsets.all(12.0),
       child: Column(
         children: [
-          const Expanded(child: Center(child: Text('شاشة نقطة البيع وتسجيل الفواتير', style: TextStyle(color: Colors.grey)))),
+          TextField(
+            decoration: InputDecoration(
+              hintText: 'بحث عام في (المخزن، الديون، الإيجار...)',
+              prefixIcon: const Icon(Icons.search, color: Colors.grey),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            decoration: InputDecoration(
+              hintText: 'ابحث عن صنف (مثل: مصباح)...',
+              prefixIcon: const Icon(Icons.search, color: Colors.grey),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            ),
+          ),
+          const Expanded(
+            child: Center(child: Text('شاشة نقطة البيع وتسجيل الفواتير', style: TextStyle(color: Colors.grey))),
+          ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('إجمالي الفاتورة: 0 د.ع', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              ElevatedButton(
+              ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
                 onPressed: () {},
-                child: const Text('إتمام البيع'),
+                icon: const Icon(Icons.check),
+                label: const Text('إتمام البيع'),
               ),
+              const Text('إجمالي الفاتورة: 0 د.ع', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ],
           ),
         ],
@@ -190,25 +267,96 @@ class DebtsSectionScreen extends StatelessWidget {
       padding: const EdgeInsets.all(12.0),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: Colors.blue[800], borderRadius: BorderRadius.circular(10)),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('إجمالي الديون المستحقة\n0 د.ع', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                Text('المديونون: 0', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              ],
+          TextField(
+            decoration: InputDecoration(
+              hintText: 'بحث عن عميل مدين أو رقم الهاتف...',
+              prefixIcon: const Icon(Icons.search, color: Colors.grey),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
             ),
           ),
-          const Expanded(child: Center(child: Text('قائمة الديون والعملاء (تسجيل واستلام الدين)', style: TextStyle(color: Colors.grey)))),
+          const SizedBox(height: 10),
+          Card(
+            child: ListTile(
+              leading: const CircleAvatar(backgroundColor: Colors.blue, child: Icon(Icons.person, color: Colors.white)),
+              title: const Text('كرار', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text('المتبقي: 23 د.ع'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const DebtDetailScreen()));
+              },
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-// 3. قسم الإيجارات
+// تفاصيل الدين للعميل (مطابق للصورة)
+class DebtDetailScreen extends StatelessWidget {
+  const DebtDetailScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('كرار', style: TextStyle(color: Colors.white)),
+          backgroundColor: const Color(0xFFE65100),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(12)),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: const [
+                    Text('المتبقي', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text('23 د.ع', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.orange)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 15),
+              const TextField(decoration: InputDecoration(labelText: 'المبلغ (د.ع)', border: OutlineInputBorder())),
+              const SizedBox(height: 10),
+              const TextField(decoration: InputDecoration(labelText: 'ملاحظة', border: OutlineInputBorder())),
+              const SizedBox(height: 15),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+                      onPressed: () {},
+                      icon: const Icon(Icons.add),
+                      label: const Text('دين جديد'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                      onPressed: () {},
+                      icon: const Icon(Icons.arrow_downward),
+                      label: const Text('استلام دفعة'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// 3. قسم الإيجار
 class RentalsSectionScreen extends StatelessWidget {
   const RentalsSectionScreen({super.key});
 
@@ -216,9 +364,54 @@ class RentalsSectionScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(12.0),
-      child: Column(
+      child: ListView(
         children: [
-          const Expanded(child: Center(child: Text('إدارة المعدات والإيجارات النشطة والمعلومات السابقة للمؤجرين', style: TextStyle(color: Colors.grey)))),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+                  onPressed: () {},
+                  icon: const Icon(Icons.add),
+                  label: const Text('إيجار جديد'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.handyman),
+                  label: const Text('إدارة المعدات'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Text('قيد الإيجار (1)', style: TextStyle(fontWeight: FontWeight.bold)),
+          Card(
+            child: ListTile(
+              title: const Text('سقالة حديد × 1', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text('العميل: كرار | الهاتف: لا يوجد\nالتاريخ: 17-11-2026'),
+              trailing: ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                onPressed: () {},
+                child: const Text('تسليم'),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text('المعدات المتاحة', style: TextStyle(fontWeight: FontWeight.bold)),
+          Card(
+            child: ListTile(
+              title: const Text('سقالة حديد'),
+              subtitle: const Text('2,000 د.ع / يوم'),
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: Colors.green.shade100, borderRadius: BorderRadius.circular(6)),
+                child: const Text('متاح 29 من 30', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -235,7 +428,16 @@ class InventorySectionScreen extends StatelessWidget {
       padding: const EdgeInsets.all(12.0),
       child: Column(
         children: [
-          const Expanded(child: Center(child: Text('قائمة الأصناف والمخزن', style: TextStyle(color: Colors.grey)))),
+          TextField(
+            decoration: InputDecoration(
+              hintText: 'ابحث عن صنف في المخزن...',
+              prefixIcon: const Icon(Icons.search, color: Colors.grey),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            ),
+          ),
+          const Expanded(child: Center(child: Text('قائمة أصناف المخزن والمواد', style: TextStyle(color: Colors.grey)))),
         ],
       ),
     );
@@ -248,15 +450,13 @@ class ReportsSectionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('تقارير الأرباح والمبيعات', style: TextStyle(color: Colors.grey)),
-    );
+    return const Center(child: Text('تقارير المبيعات والأرباح', style: TextStyle(color: Colors.grey)));
   }
 }
 
-// قسم الإعدادات والنسخ الاحتياطي والمزامنة والتحكم بالألوان
-class SettingsSectionScreen extends StatelessWidget {
-  const SettingsSectionScreen({super.key});
+// شاشة الإعدادات والنسخ الاحتياطي ومزامنة Google Drive والباركود والألوان
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -264,7 +464,7 @@ class SettingsSectionScreen extends StatelessWidget {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('الإعدادات والنسخ الاحتياطي والمزامنة', style: TextStyle(color: Colors.white)),
+          title: const Text('الإعدادات والنسخ الاحتياطي', style: TextStyle(color: Colors.white)),
           backgroundColor: const Color(0xFFE65100),
         ),
         body: ListView(
