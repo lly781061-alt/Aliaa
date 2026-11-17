@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:io';
 import 'store.dart';
-import 'export.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // تهيئة فايربيس عند بدء التشغيل
-  runApp(ChangeNotifierProvider(create: (_) => StoreData(), child: const StoreApp()));
+  await Firebase.initializeApp();
+  runApp(const StoreApp());
 }
 
 class StoreApp extends StatelessWidget {
@@ -17,83 +13,145 @@ class StoreApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = Provider.of<StoreData>(context);
-    MaterialColor pColor = Colors.amber;
-    if (store.primaryColorName == 'blue') pColor = Colors.blue;
-    if (store.primaryColorName == 'teal') pColor = Colors.teal;
-    if (store.primaryColorName == 'green') pColor = Colors.green;
-    if (store.primaryColorName == 'purple') pColor = Colors.purple;
-
     return MaterialApp(
-      title: 'متجر برو',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: pColor, useMaterial3: true),
-      builder: (context, child) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(store.fontScale)),
-          child: Directionality(textDirection: TextDirection.rtl, child: child!),
-        );
-      },
+      title: 'إدارة المتجر',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        fontFamily: 'Roboto',
+      ),
       home: const HomeScreen(),
     );
   }
 }
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('إدارة المتجر - المزامنة اللحظية'),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        else: Container(),
+        child: GridView.count(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          children: [
+            _buildMenuCard(context, 'المبيعات والأصناف', Icons.store, const SalesScreen()),
+            _buildMenuCard(context, 'المخزن', Icons.inventory, const InventoryScreen()),
+            _buildMenuCard(context, 'الديون', Icons.money_off, const DebtsScreen()),
+            _buildMenuCard(context, 'الإيجارات', Icons.home, const RentsScreen()),
+            _buildMenuCard(context, 'التقارير', Icons.bar_chart, const ReportsScreen()),
+            _buildMenuCard(context, 'الإعدادات', Icons.settings, const SettingsScreen()),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuCard(BuildContext context, String title, IconData icon, Widget screen) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => screen),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 48, color: Colors.blue),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 3; 
-  String globalSearch = '';
-
-  final List<Widget> _screens = const [
-    SalesScreen(),
-    InventoryScreen(),
-    DebtsScreen(),
-    RentsScreen(),
-    ReportsScreen(),
-  ];
-
+// شاشة المبيعات
+class SalesScreen extends StatelessWidget {
+  const SalesScreen({super.key});
   @override
   Widget build(BuildContext context) {
-    final store = Provider.of<StoreData>(context);
-
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(175),
-        child: AppBar(
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Theme.of(context).primaryColor, Colors.deepOrange.shade400],
-                begin: Alignment.topRight,
-                end: Alignment.bottomLeft,
-              ),
-            ),
-          ),
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.settings, color: Colors.white, size: 28),
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen())),
-              ),
-              Text(store.storeName, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22)),
-              const SizedBox(width: 40),
-            ],
-          ),
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(115),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.
+      appBar: AppBar(title: const Text('المبيعات والأصناف')),
+      body: const Center(child: Text('قسم المبيعات والأصناف متصل بقاعدة البيانات')),
+    );
+  }
+}
+
+// شاشة المخزن
+class InventoryScreen extends StatelessWidget {
+  const InventoryScreen({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('المخزن')),
+      body: const Center(child: Text('قسم المخزن متصل بقاعدة البيانات')),
+    );
+  }
+}
+
+// شاشة الديون
+class DebtsScreen extends StatelessWidget {
+  const DebtsScreen({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('الديون')),
+      body: const Center(child: Text('قسم الديون متصل بقاعدة البيانات')),
+    );
+  }
+}
+
+// شاشة الإيجارات
+class RentsScreen extends StatelessWidget {
+  const RentsScreen({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('الإيجارات')),
+      body: const Center(child: Text('قسم الإيجارات متصل بقاعدة البيانات')),
+    );
+  }
+}
+
+// شاشة التقارير
+class ReportsScreen extends StatelessWidget {
+  const ReportsScreen({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('التقارير')),
+      body: const Center(child: Text('قسم التقارير متصل بقاعدة البيانات')),
+    );
+  }
+}
+
+// شاشة الإعدادات
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('الإعدادات')),
+      body: const Center(child: Text('إعدادات المتجر والربط')),
+    );
+  }
+}
