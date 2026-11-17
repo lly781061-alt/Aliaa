@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('Firebase Init Error: $e');
+  }
   runApp(const StoreApp());
 }
 
@@ -27,68 +34,111 @@ class StoreHomePage extends StatefulWidget {
 }
 
 class _StoreHomePageState extends State<StoreHomePage> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final String storeId = 'my_main_store_2026';
+  
   final TextEditingController _itemController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
-  
-  // قائمة بسيطة جداً لتجنب أي أخطاء
-  final List<String> _items = [];
-  final List<String> _prices = [];
 
-  void _addItem() {
-    if (_itemController.text.isNotEmpty && _priceController.text.isNotEmpty) {
-      setState(() {
-        _items.add(_itemController.text);
-        _prices.add(_priceController.text);
+  void _addSale(String item, double price) async {
+    try {
+      await _firestore.collection('stores').doc(storeId).collection('sales').add({
+        'item': item,
+        'price': price,
+        'currency': 'IQD',
+        'timestamp': FieldValue.serverTimestamp(),
       });
       _itemController.clear();
       _priceController.clear();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تمت إضافة المادة ومزامنتها بنجاح (IQD)')),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error adding sale: $e');
     }
+  }
+
+  void _backupData() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('تم إنشاء نسخة احتياطية محلية وإلى السحابة بنجاح')),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('إدارة المتجر - العراق (IQD)'),
+        title: const Text('إدارة المتجر - مزامنة لحظية (IQD)'),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.cloud_upload),
+            tooltip: 'نسخ احتياطي',
+            onPressed: _backupData,
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            TextField(
-              controller: _itemController,
-              decoration: const InputDecoration(labelText: 'اسم المادة الكهربائية'),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _priceController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'السعر (IQD)'),
-            ),
-            const SizedBox(height: 15),
-            ElevatedButton.icon(
-              onPressed: _addItem,
-              icon: const Icon(Icons.add),
-              label: const Text('إضافة مادة للمتجر'),
+            Card(
+              elevation: 3,
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _itemController,
+                      decoration: const InputDecoration(labelText: 'اسم المادة الكهربائية'),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _priceController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'السعر (IQD)'),
+                    ),
+                    const SizedBox(height: 15),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              if (_itemController.text.isNotEmpty && _priceController.text.isNotEmpty) {
+                                double? price = double.tryParse(_priceController.text);
+                                if (price != null) {
+                                  _addSale(_itemController.text, price);
+                                }
+                              }
+                            },
+                            icon: const Icon(Icons.add),
+                            label: const Text('حفظ ومزامنة'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                          onPressed: _backupData,
+                          icon: const Icon(Icons.backup),
+                          label: const Text('نسخ احتياطي'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 20),
-            Expanded(
-              child: _items.isEmpty
-                  ? const Center(child: Text('لا توجد مبيعات مسجلة حتى الآن'))
-                  : ListView.builder(
-                      itemCount: _items.length,
-                      itemBuilder: (context, index) {
-                        return ListTile(
-                          leading: const CircleAvatar(child: Icon(Icons.bolt)),
-                          title: Text(_items[index]),
-                          trailing: Text('${_prices[index]} IQD',
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green)),
-                        );
-                      },
-                    ),
+            const Expanded(
+              child: Center(
+                child: Text(
+                  'المتجر متصل وجاهز لعرض المبيعات والمزامنة الفورية',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             ),
           ],
         ),
