@@ -124,7 +124,6 @@ class _StoreHomePageState extends State<StoreHomePage> {
           ),
           Expanded(
             child: storeProvider.sales.isEmpty
-                .isEmpty // fallback handled gracefully
                 ? const Center(child: Text('لا توجد مبيعات مسجلة حتى الآن'))
                 : ListView.builder(
                     itemCount: storeProvider.sales.length,
