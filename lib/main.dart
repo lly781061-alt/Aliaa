@@ -74,8 +74,7 @@ class _StoreHomePageState extends State<StoreHomePage> {
             const SizedBox(height: 20),
             Expanded(
               child: _sales.isEmpty
-                  .isEmpty == true // للتحقق البسيط
-                  ? const Center(child: Text('لا توجد مبيعات مسجلة'))
+                  ? const Center(child: Text('لا توجد مبيعات مسجلة حتى الآن'))
                   : ListView.builder(
                       itemCount: _sales.length,
                       itemBuilder: (context, index) {
