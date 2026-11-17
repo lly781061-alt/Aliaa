@@ -16,10 +16,9 @@ class StoreApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'إدارة المتجر',
-      home: const SalesScreen(),
+      home: SalesScreen(),
     );
   }
 }
@@ -80,7 +79,7 @@ class _SalesScreenState extends State<SalesScreen> {
             ElevatedButton.icon(
               onPressed: _addSale,
               icon: const Icon(Icons.add),
-              label: const Text('إضافة وإرسال مبيعة'),
+              label: const Text('إضافة مبيعة'),
               style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(45)),
             ),
             const SizedBox(height: 20),
