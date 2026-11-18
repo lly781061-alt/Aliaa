@@ -224,4 +224,121 @@ class StoreData extends ChangeNotifier {
     prefs.setString('storePhone', storePhone);
     prefs.setString('storeAddress', storeAddress);
     prefs.setString('currencySymbol', currencySymbol);
-    prefs.setString('primaryColorName', primaryColor
+    prefs.setString('primaryColorName', primaryColorName);
+    prefs.setDouble('fontScale', fontScale);
+    
+    prefs.setString('nameColor', nameColor);
+    prefs.setString('dateColor', dateColor);
+    prefs.setString('activeColor', activeColor);
+    prefs.setString('returnedColor', returnedColor);
+    prefs.setString('linkedDriveEmail', linkedDriveEmail);
+    notifyListeners();
+  }
+
+  String exportToJson() => jsonEncode({
+        'debts': debts.map((e) => e.toJson()).toList(),
+        'rents': rents.map((e) => e.toJson()).toList(),
+        'items': items.map((e) => e.toJson()).toList(),
+        'equipments': equipments.map((e) => e.toJson()).toList(),
+        'customSections': customSections,
+        'storeName': storeName,
+      });
+
+  bool importFromJson(String jsonStr) {
+    try {
+      final data = jsonDecode(jsonStr);
+      if (data['debts'] != null) debts = (data['debts'] as List).map((e) => CustomerDebt.fromJson(e)).toList();
+      if (data['rents'] != null) rents = (data['rents'] as List).map((e) => ActiveRental.fromJson(e)).toList();
+      if (data['items'] != null) items = (data['items'] as List).map((e) => StoreItem.fromJson(e)).toList();
+      if (data['equipments'] != null) equipments = (data['equipments'] as List).map((e) => RentalEquipment.fromJson(e)).toList();
+      if (data['customSections'] != null) customSections = List<String>.from(data['customSections']);
+      if (data['storeName'] != null) storeName = data['storeName'];
+      saveData();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<String?> saveLocalBackupFile() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/store_backup_${DateTime.now().millisecondsSinceEpoch}.json');
+      await file.writeAsString(exportToJson());
+      return file.path;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  void addCustomerDebt(CustomerDebt c) { debts.add(c); saveData(); }
+  void addTransactionToCustomer(String customerId, double amount, bool isPayment, String note) {
+    int idx = debts.indexWhere((e) => e.id == customerId);
+    if (idx != -1) {
+      debts[idx].transactions.insert(0, DebtTransaction(id: DateTime.now().millisecondsSinceEpoch.toString(), amount: amount, date: DateTime.now().toString().substring(0, 16), isPayment: isPayment, note: note));
+      saveData();
+    }
+  }
+  void updateTransaction(String customerId, String transId, double amount, String note) {
+    int cIdx = debts.indexWhere((e) => e.id == customerId);
+    if (cIdx != -1) {
+      int tIdx = debts[cIdx].transactions.indexWhere((t) => t.id == transId);
+      if (tIdx != -1) {
+        debts[cIdx].transactions[tIdx].amount = amount;
+        debts[cIdx].transactions[tIdx].note = note;
+        saveData();
+      }
+    }
+  }
+  void removeTransaction(String customerId, String transId) {
+    int cIdx = debts.indexWhere((e) => e.id == customerId);
+    if (cIdx != -1) {
+      debts[cIdx].transactions.removeWhere((t) => t.id == transId);
+      saveData();
+    }
+  }
+  void updateCustomerInfo(String customerId, String name, String phone, String? imagePath) {
+    int idx = debts.indexWhere((e) => e.id == customerId);
+    if (idx != -1) {
+      debts[idx].name = name;
+      debts[idx].phone = phone;
+      if (imagePath != null) debts[idx].imagePath = imagePath;
+      saveData();
+    }
+  }
+  void removeCustomerDebt(String customerId) { debts.removeWhere((e) => e.id == customerId); saveData(); }
+  void addActiveRental(ActiveRental r) {
+    rents.insert(0, r);
+    int eqIdx = equipments.indexWhere((e) => e.name == r.equipmentName);
+    if (eqIdx != -1) { equipments[eqIdx].availableCount -= r.count; if (equipments[eqIdx].availableCount < 0) equipments[eqIdx].availableCount = 0; }
+    saveData();
+  }
+  void updateRental(String id, int newCount, String note) {
+    int idx = rents.indexWhere((e) => e.id == id);
+    if (idx != -1) {
+      int oldCnt = rents[idx].count;
+      rents[idx].count = newCount;
+      rents[idx].note = note;
+      int eqIdx = equipments.indexWhere((e) => e.name == rents[idx].equipmentName);
+      if (eqIdx != -1) { equipments[eqIdx].availableCount -= (newCount - oldCnt); }
+      saveData();
+    }
+  }
+  void returnRental(String id) {
+    int idx = rents.indexWhere((e) => e.id == id);
+    if (idx != -1) {
+      rents[idx].isReturned = true;
+      int eqIdx = equipments.indexWhere((e) => e.name == rents[idx].equipmentName);
+      if (eqIdx != -1) { equipments[eqIdx].availableCount += rents[idx].count; }
+      saveData();
+    }
+  }
+  void addItem(StoreItem item) { items.add(item); saveData(); }
+  void updateItem(StoreItem item) {
+    int idx = items.indexWhere((e) => e.id == item.id);
+    if (idx != -1) { items[idx] = item; saveData(); }
+  }
+  void removeItem(String id) { items.removeWhere((e) => e.id == id); saveData(); }
+  void addSection(String s) { if (!customSections.contains(s)) { customSections.add(s); saveData(); } }
+  void removeSection(String s) { customSections.remove(s); saveData(); }
+}
