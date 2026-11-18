@@ -40,7 +40,7 @@ class StoreMainScreen extends StatefulWidget {
 class _StoreMainScreenState extends State<StoreMainScreen> {
   int _currentIndex = 0;
 
-  // الأقسام مرتبة من اليمين لليسار: بيع (0)، الديون (1)، الإيجار (2)، المخزن (3)، التقارير (4)
+  // الأقسام مرتبة من اليمين لليسار: بيع، الديون، الإيجار، المخزن، التقارير
   final List<Widget> _screens = const [
     SaleSectionScreen(),
     DebtsSectionScreen(),
@@ -49,14 +49,13 @@ class _StoreMainScreenState extends State<StoreMainScreen> {
     ReportsSectionScreen(),
   ];
 
-  // نوافذ الحوار للاختصارات العلوية (إضافة صنف، إيجار جديد، دين جديد)
   void _showAddItemDialog() {
     showDialog(
       context: context,
       builder: (context) => Directionality(
         textDirection: TextDirection.rtl,
         child: AlertDialog(
-          title: const Text('إضافة صنف جديد'),
+          title: const Text('إضافة صنف جديد للمخزن'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: const [
@@ -67,7 +66,7 @@ class _StoreMainScreenState extends State<StoreMainScreen> {
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
-            ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('حفظ')),
+            ElevatedButton(onPressed: () => Navigator.pop(context), child: const Text('حفظ الصنف')),
           ],
         ),
       ),
@@ -84,7 +83,7 @@ class _StoreMainScreenState extends State<StoreMainScreen> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: const [
-              TextField(decoration: InputDecoration(labelText: 'المعدة (سقالة حديد، خلاطة...)')),
+              TextField(decoration: InputDecoration(labelText: 'اختر المعدة (سقالة، خلاطة...)')),
               TextField(decoration: InputDecoration(labelText: 'العدد')),
               TextField(decoration: InputDecoration(labelText: 'اسم المستأجر')),
               TextField(decoration: InputDecoration(labelText: 'رقم هاتف المستأجر')),
@@ -133,16 +132,22 @@ class _StoreMainScreenState extends State<StoreMainScreen> {
           title: const Text('محل الكهربائيات والإنشائيات', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           centerTitle: true,
           backgroundColor: const Color(0xFFE65100),
-          leading: IconButton(
-            icon: const Icon(Icons.settings, color: Colors.white),
-            onPressed: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
-            },
-          ),
+          // تم ضبط أيقونة الإعدادات في الجهة الصحيحة لتعمل بنجاح
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.settings, color: Colors.white),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                );
+              },
+            ),
+          ],
         ),
         body: Column(
           children: [
-            // شريط الاختصارات العلوية المطابق للصورة (إضافة صنف، إيجار جديد، دين جديد)
+            // شريط الاختصارات العلوية (إضافة صنف، إيجار جديد، دين جديد)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
@@ -179,11 +184,11 @@ class _StoreMainScreenState extends State<StoreMainScreen> {
                 ],
               ),
             ),
-            // محتوى القسم الحالي
+            // محتوى القسم النشط
             Expanded(child: _screens[_currentIndex]),
           ],
         ),
-        // الشريط السفلي للأقسام بالترتيب المطلوب من اليمين لليسار تماماً
+        // الشريط السفلي للأقسام بالترتيب الصحيح من اليمين لليسار
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (index) {
@@ -236,9 +241,7 @@ class SaleSectionScreen extends StatelessWidget {
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
             ),
           ),
-          const Expanded(
-            child: Center(child: Text('شاشة نقطة البيع وتسجيل الفواتير', style: TextStyle(color: Colors.grey))),
-          ),
+          const Expanded(child: Center(child: Text('شاشة نقطة البيع وتسجيل الفواتير', style: TextStyle(color: Colors.grey)))),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -294,7 +297,6 @@ class DebtsSectionScreen extends StatelessWidget {
   }
 }
 
-// تفاصيل الدين للعميل (مطابق للصورة)
 class DebtDetailScreen extends StatelessWidget {
   const DebtDetailScreen({super.key});
 
@@ -428,14 +430,27 @@ class InventorySectionScreen extends StatelessWidget {
       padding: const EdgeInsets.all(12.0),
       child: Column(
         children: [
-          TextField(
-            decoration: InputDecoration(
-              hintText: 'ابحث عن صنف في المخزن...',
-              prefixIcon: const Icon(Icons.search, color: Colors.grey),
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: 'ابحث عن صنف في المخزن...',
+                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+                onPressed: () {},
+                icon: const Icon(Icons.add),
+                label: const Text('إضافة صنف'),
+              ),
+            ],
           ),
           const Expanded(child: Center(child: Text('قائمة أصناف المخزن والمواد', style: TextStyle(color: Colors.grey)))),
         ],
@@ -454,7 +469,7 @@ class ReportsSectionScreen extends StatelessWidget {
   }
 }
 
-// شاشة الإعدادات والنسخ الاحتياطي ومزامنة Google Drive والباركود والألوان
+// شاشة الإعدادات الشاملة (تعمل الآن بكفاءة عند الضغط عليها)
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
