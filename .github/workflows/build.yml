@@ -1,7 +1,9 @@
-name: Build Flutter APK
+name: Build APK Release
 
 on:
   push:
+    branches: [ main, master ]
+  pull_request:
     branches: [ main, master ]
 
 jobs:
@@ -10,7 +12,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Set up Java
         uses: actions/setup-java@v3
@@ -25,10 +27,9 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Force Recreate Android Platform
+      - name: Force min SDK version to 21 for mobile_scanner
         run: |
-          rm -rf android
-          flutter create . --project-name=store_app --platforms=android
+          sed -i 's/minSdkVersion.*/minSdkVersion 21/g' android/app/build.gradle || true
 
       - name: Get Dependencies
         run: flutter pub get
@@ -37,7 +38,7 @@ jobs:
         run: flutter build apk --release --target-platform android-arm,android-arm64
 
       - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
