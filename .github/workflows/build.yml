@@ -27,25 +27,68 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Generate Android Platform & Fix Gradle Syntax
+      - name: Generate Android Platform & Write Clean Config
         run: |
           mkdir -p ../app_build
           cp -a . ../app_build/
           cd ../app_build
           
-          # تصحيح اسم الحزمة مؤقتًا
+          # تصحيح اسم الحزمة مؤقتًا لتجنب أحرف الكود الكبيرة
           sed -i 's/^name:.*/name: store_app/g' pubspec.yaml
           
           # توليد منصة أندرويد
           flutter create . --platforms=android --org com.store.app
           
-          if [ -f "android/app/build.gradle" ]; then
-            # وضع تعريف localProperties قبل كتلة android { مباشرة للحفاظ على ترتيب plugins { }
-            sed -i '/^android {/i def localProperties = new Properties()\ndef localPropertiesFile = rootProject.file("local.properties")\nif (localPropertiesFile.exists()) {\n    localProperties.load(new FileInputStream(localPropertiesFile))\n}\n' android/app/build.gradle
-            
-            # ضبط الحد الأدنى للـ SDK إلى 21
-            sed -i 's/minSdkVersion.*/minSdkVersion 21/g' android/app/build.gradle || true
-          fi
+          # إنشاء ملف local.properties فارغ لتجنب أي مشاكل في القراءة
+          touch android/local.properties
+          
+          # كتابة ملف build.gradle نظيف ومضبوط بالكامل بالصيغة الصحيحة
+          cat << 'EOF' > android/app/build.gradle
+          plugins {
+              id "com.android.application"
+              id "kotlin-android"
+              id "dev.flutter.flutter-gradle-plugin"
+          }
+
+          def localProperties = new Properties()
+          def localPropertiesFile = rootProject.file("local.properties")
+          if (localPropertiesFile.exists()) {
+              localProperties.load(new FileInputStream(localPropertiesFile))
+          }
+
+          android {
+              namespace "com.store.app"
+              compileSdkVersion flutter.compileSdkVersion
+              ndkVersion flutter.ndkVersion
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_1_8
+                  targetCompatibility JavaVersion.VERSION_1_8
+              }
+
+              kotlinOptions {
+                  jvmTarget = '1.8'
+              }
+
+              defaultConfig {
+                  applicationId "com.store.app"
+                  minSdkVersion 21
+                  targetSdkVersion flutter.targetSdkVersion
+                  versionCode flutter.versionCode.toInteger()
+                  versionName flutter.versionName
+              }
+
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.debug
+                  }
+              }
+          }
+
+          flutter {
+              source '../..'
+          }
+          EOF
           
           cd -
           cp -a ../app_build/android ./
