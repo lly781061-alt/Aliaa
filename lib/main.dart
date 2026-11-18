@@ -332,13 +332,13 @@ class RentsScreen extends StatelessWidget {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('لغي'));
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
           ElevatedButton(
             onPressed: () {
               if (customerCtrl.text.isNotEmpty) {
                 int count = int.tryParse(countCtrl.text) ?? 1;
                 store.addActiveRental(ActiveRental(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  id: DateTime.now().millisecondsSinceEqual.toString(),
                   equipmentName: selectedEq.name,
                   count: count,
                   customerName: customerCtrl.text,
