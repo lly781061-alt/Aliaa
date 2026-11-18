@@ -17,7 +17,6 @@ dependencies:
   path_provider: ^2.1.2
   share_plus: ^7.2.2
   qr_flutter: ^4.1.0
-  mobile_scanner: ^5.1.1
   google_sign_in: ^6.2.1
   googleapis: ^13.1.0
   http: ^1.2.1
