@@ -181,58 +181,64 @@ class StoreData extends ChangeNotifier {
   }
 
   Future<void> loadData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final dStr = prefs.getString('debts_v2');
-    if (dStr != null) debts = (jsonDecode(dStr) as List).map((e) => CustomerDebt.fromJson(e)).toList();
-    
-    final eqStr = prefs.getString('equipments');
-    if (eqStr != null) equipments = (jsonDecode(eqStr) as List).map((e) => RentalEquipment.fromJson(e)).toList();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final dStr = prefs.getString('debts_v2');
+      if (dStr != null) debts = (jsonDecode(dStr) as List).map((e) => CustomerDebt.fromJson(e)).toList();
+      
+      final eqStr = prefs.getString('equipments');
+      if (eqStr != null) equipments = (jsonDecode(eqStr) as List).map((e) => RentalEquipment.fromJson(e)).toList();
 
-    final rStr = prefs.getString('rents_v2');
-    if (rStr != null) rents = (jsonDecode(rStr) as List).map((e) => ActiveRental.fromJson(e)).toList();
+      final rStr = prefs.getString('rents_v2');
+      if (rStr != null) rents = (jsonDecode(rStr) as List).map((e) => ActiveRental.fromJson(e)).toList();
 
-    final iStr = prefs.getString('items');
-    if (iStr != null) items = (jsonDecode(iStr) as List).map((e) => StoreItem.fromJson(e)).toList();
+      final iStr = prefs.getString('items');
+      if (iStr != null) items = (jsonDecode(iStr) as List).map((e) => StoreItem.fromJson(e)).toList();
 
-    final sStr = prefs.getString('customSections');
-    if (sStr != null) customSections = List<String>.from(jsonDecode(sStr));
+      final sStr = prefs.getString('customSections');
+      if (sStr != null) customSections = List<String>.from(jsonDecode(sStr));
 
-    storeName = prefs.getString('storeName') ?? 'محل الكهربائيات والإنشائيات';
-    storePhone = prefs.getString('storePhone') ?? '';
-    storeAddress = prefs.getString('storeAddress') ?? '';
-    currencySymbol = prefs.getString('currencySymbol') ?? 'د.ع';
-    primaryColorName = prefs.getString('primaryColorName') ?? 'amber';
-    fontScale = prefs.getDouble('fontScale') ?? 1.0;
-    
-    nameColor = prefs.getString('nameColor') ?? 'black';
-    dateColor = prefs.getString('dateColor') ?? 'grey';
-    activeColor = prefs.getString('activeColor') ?? 'blue';
-    returnedColor = prefs.getString('returnedColor') ?? 'green';
-    linkedDriveEmail = prefs.getString('linkedDriveEmail') ?? 'غير متصل';
+      storeName = prefs.getString('storeName') ?? 'محل الكهربائيات والإنشائيات';
+      storePhone = prefs.getString('storePhone') ?? '';
+      storeAddress = prefs.getString('storeAddress') ?? '';
+      currencySymbol = prefs.getString('currencySymbol') ?? 'د.ع';
+      primaryColorName = prefs.getString('primaryColorName') ?? 'amber';
+      fontScale = prefs.getDouble('fontScale') ?? 1.0;
+      
+      nameColor = prefs.getString('nameColor') ?? 'black';
+      dateColor = prefs.getString('dateColor') ?? 'grey';
+      activeColor = prefs.getString('activeColor') ?? 'blue';
+      returnedColor = prefs.getString('returnedColor') ?? 'green';
+      linkedDriveEmail = prefs.getString('linkedDriveEmail') ?? 'غير متصل';
 
-    notifyListeners();
+      notifyListeners();
+    } catch (e) {
+      // منع انهيار التطبيق في حال حدوث أي خطأ في القراءة
+    }
   }
 
   Future<void> saveData() async {
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setString('debts_v2', jsonEncode(debts.map((e) => e.toJson()).toList()));
-    prefs.setString('equipments', jsonEncode(equipments.map((e) => e.toJson()).toList()));
-    prefs.setString('rents_v2', jsonEncode(rents.map((e) => e.toJson()).toList()));
-    prefs.setString('items', jsonEncode(items.map((e) => e.toJson()).toList()));
-    prefs.setString('customSections', jsonEncode(customSections));
-    prefs.setString('storeName', storeName);
-    prefs.setString('storePhone', storePhone);
-    prefs.setString('storeAddress', storeAddress);
-    prefs.setString('currencySymbol', currencySymbol);
-    prefs.setString('primaryColorName', primaryColorName);
-    prefs.setDouble('fontScale', fontScale);
-    
-    prefs.setString('nameColor', nameColor);
-    prefs.setString('dateColor', dateColor);
-    prefs.setString('activeColor', activeColor);
-    prefs.setString('returnedColor', returnedColor);
-    prefs.setString('linkedDriveEmail', linkedDriveEmail);
-    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      prefs.setString('debts_v2', jsonEncode(debts.map((e) => e.toJson()).toList()));
+      prefs.setString('equipments', jsonEncode(equipments.map((e) => e.toJson()).toList()));
+      prefs.setString('rents_v2', jsonEncode(rents.map((e) => e.toJson()).toList()));
+      prefs.setString('items', jsonEncode(items.map((e) => e.toJson()).toList()));
+      prefs.setString('customSections', jsonEncode(customSections));
+      prefs.setString('storeName', storeName);
+      prefs.setString('storePhone', storePhone);
+      prefs.setString('storeAddress', storeAddress);
+      prefs.setString('currencySymbol', currencySymbol);
+      prefs.setString('primaryColorName', primaryColorName);
+      prefs.setDouble('fontScale', fontScale);
+      
+      prefs.setString('nameColor', nameColor);
+      prefs.setString('dateColor', dateColor);
+      prefs.setString('activeColor', activeColor);
+      prefs.setString('returnedColor', returnedColor);
+      prefs.setString('linkedDriveEmail', linkedDriveEmail);
+      notifyListeners();
+    } catch (e) {}
   }
 
   String exportToJson() => jsonEncode({
