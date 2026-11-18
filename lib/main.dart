@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 void main() {
   runApp(const ElectricalStoreApp());
@@ -86,14 +85,14 @@ class PosScreen extends StatelessWidget {
             Expanded(
               child: ListView(
                 children: const [
-                  Card(child: ListTile(title: Text('واير كهربائي 2.5 مم'), subtitle: 'السعر: 45,000 د.ع', trailing: Icon(Icons.add_shopping_cart))),
-                  Card(child: ListTile(title: Text('مفتاح إنارة مفرد'), subtitle: 'السعر: 2,500 د.ع', trailing: Icon(Icons.add_shopping_cart))),
-                  Card(child: ListTile(title: Text('قاطع عورة 32 أمبير'), subtitle: 'السعر: 15,000 د.ع', trailing: Icon(Icons.add_shopping_cart))),
+                  Card(child: ListTile(title: Text('واير كهربائي 2.5 مم'), subtitle: Text('السعر: 45,000 د.ع'), trailing: Icon(Icons.add_shopping_cart))),
+                  Card(child: ListTile(title: Text('مفتاح إنارة مفرد'), subtitle: Text('السعر: 2,500 د.ع'), trailing: Icon(Icons.add_shopping_cart))),
+                  Card(child: ListTile(title: Text('قاطع عورة 32 أمبير'), subtitle: Text('السعر: 15,000 د.ع'), trailing: Icon(Icons.add_shopping_cart))),
                 ],
               ),
             ),
             Container(
-              padding: const_all(16),
+              padding: const EdgeInsets.all(16),
               color: Colors.amber[50],
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -112,8 +111,6 @@ class PosScreen extends StatelessWidget {
       ),
     );
   }
-
-  const_all(double val) => EdgeInsets.all(val);
 }
 
 // 2. شاشة المخزن
@@ -127,9 +124,9 @@ class InventoryScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: const [
-          ListTile(title: Text('سلك نحاس'), subtitle: 'الكمية: 10 لفة | السعر: 45,000 د.ع', leading: Icon(Icons.electrical_services)),
+          ListTile(title: Text('سلك نحاس'), subtitle: Text('الكمية: 10 لفة | السعر: 45,000 د.ع'), leading: Icon(Icons.electrical_services)),
           Divider(),
-          ListTile(title: Text('بانل ليد 60×60'), subtitle: 'الكمية: 25 قطعة | السعر: 12,000 د.ع', leading: Icon(Icons.light)),
+          ListTile(title: Text('بانل ليد 60×60'), subtitle: Text('الكمية: 25 قطعة | السعر: 12,000 د.ع'), leading: Icon(Icons.light)),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -155,7 +152,7 @@ class DebtsScreen extends StatelessWidget {
           Card(
             child: ListTile(
               title: Text('أحمد محمد'),
-              subtitle: 'المبلغ: 125,000 د.ع\nالتاريخ: 2026/04/10',
+              subtitle: Text('المبلغ: 125,000 د.ع\nالتاريخ: 2026/04/10'),
               isThreeLine: true,
               trailing: Text('مطلوب', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
             ),
@@ -180,7 +177,7 @@ class RentalsScreen extends StatelessWidget {
           Card(
             child: ListTile(
               title: Text('مؤشر حفر (هيلتي)'),
-              subtitle: 'المستأجر: كرم | الحساب اليومي: 15,000 د.ع',
+              subtitle: Text('المستأجر: كرم | الحساب اليومي: 15,000 د.ع'),
               trailing: Chip(label: Text('مؤجر حالياً', style: TextStyle(color: Colors.white)), backgroundColor: Colors.orange),
             ),
           ),
