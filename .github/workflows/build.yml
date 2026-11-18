@@ -27,15 +27,25 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Setup Android Platform & Fix SDK
+      - name: Generate Android Platform Safely
         run: |
-          # توليد منصة أندرويد بشكل نظيف وآمن
-          flutter create . --platforms=android --org com.store.app
+          # إنشاء مجلد مؤقت بحروف صغيرة لتجنب مشكلة اسم المستودع (Aliaa)
+          mkdir -p ../app_build
+          cp -a . ../app_build/
+          cd ../app_build
           
-          # تعديل الحد الأدنى للـ SDK إلى 21
+          # تصحيح اسم الحزمة مؤقتاً
+          sed -i 's/^name:.*/name: store_app/g' pubspec.yaml
+          
+          # توليد منصة أندرويد وضبط الـ SDK
+          flutter create . --platforms=android --org com.store.app
           if [ -f "android/app/build.gradle" ]; then
             sed -i 's/minSdkVersion.*/minSdkVersion 21/g' android/app/build.gradle || true
           fi
+          
+          # نقل مجلد الأندرويد الناتج إلى المشروع الأصلي
+          cd -
+          cp -a ../app_build/android ./
 
       - name: Get Dependencies
         run: flutter pub get
