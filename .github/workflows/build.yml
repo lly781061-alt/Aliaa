@@ -27,12 +27,15 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Generate Android Platform Structure & Fix SDK
+      - name: Setup Android Platform & Fix SDK
         run: |
-          # توليد ملفات منصة أندرويد تلقائياً إذا كانت مفقودة في المستودع
+          # إصلاح اسم الحزمة في pubspec.yaml مؤقتاً لتجنب خطأ الحروف الكبيرة
+          sed -i 's/^name:.*/name: store_app/g' pubspec.yaml
+          
+          # توليد منصة أندرويد بشكل نظيف
           flutter create . --platforms=android --org com.store.app
           
-          # ضبط الحد الأدنى للـ SDK إلى 21 لضمان توافق الحزم الحديثة
+          # تعديل الحد الأدنى للـ SDK إلى 21
           if [ -f "android/app/build.gradle" ]; then
             sed -i 's/minSdkVersion.*/minSdkVersion 21/g' android/app/build.gradle || true
           fi
