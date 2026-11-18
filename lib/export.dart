@@ -8,7 +8,6 @@ import 'store.dart';
 class ExportScreen extends StatelessWidget {
   const ExportScreen({super.key});
 
-  @const
   @override
   Widget build(BuildContext context) {
     final store = Provider.of<StoreData>(context);
