@@ -39,21 +39,12 @@ jobs:
           # توليد منصة أندرويد
           flutter create . --platforms=android --org com.store.app
           
-          # إنشاء ملف local.properties فارغ لتجنب أي مشاكل في القراءة
-          touch android/local.properties
-          
-          # كتابة ملف build.gradle نظيف ومضبوط بالكامل بالصيغة الصحيحة
+          # كتابة ملف build.gradle نظيف ومضبوط بالقيم الثابتة لتجنب أي أخطاء
           cat << 'EOF' > android/app/build.gradle
           plugins {
               id "com.android.application"
               id "kotlin-android"
               id "dev.flutter.flutter-gradle-plugin"
-          }
-
-          def localProperties = new Properties()
-          def localPropertiesFile = rootProject.file("local.properties")
-          if (localPropertiesFile.exists()) {
-              localProperties.load(new FileInputStream(localPropertiesFile))
           }
 
           android {
@@ -74,8 +65,8 @@ jobs:
                   applicationId "com.store.app"
                   minSdkVersion 21
                   targetSdkVersion flutter.targetSdkVersion
-                  versionCode flutter.versionCode.toInteger()
-                  versionName flutter.versionName
+                  versionCode 1
+                  versionName "1.0.0"
               }
 
               buildTypes {
