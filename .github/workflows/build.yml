@@ -27,16 +27,9 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Configure Android v2 Embedding & Min SDK 21
+      - name: Force min SDK version to 21
         run: |
-          # تحديث الـ minSdkVersion إلى 21
           sed -i 's/minSdkVersion.*/minSdkVersion 21/g' android/app/build.gradle || true
-          
-          # إضافة مטא-داتا الخاصة بالـ flutterEmbedding v2 إلى ملف AndroidManifest.xml إذا لم تكن موجودة
-          MANIFEST="android/app/src/main/AndroidManifest.xml"
-          if ! grep -q "flutterEmbedding" "$MANIFEST"; then
-            sed -i '/<application/a \        <meta-data\n            android:name="flutterEmbedding"\n            android:value="2" />' "$MANIFEST"
-          fi
 
       - name: Get Dependencies
         run: flutter pub get
