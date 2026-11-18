@@ -27,59 +27,22 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Generate Android Platform & Write Clean Config
+      - name: Generate Android & Fix Package Match
         run: |
           mkdir -p ../app_build
           cp -a . ../app_build/
           cd ../app_build
           
-          # تصحيح اسم الحزمة مؤقتًا لتجنب أحرف الكود الكبيرة
+          # توحيد اسم الحزمة بدقة لتجنب الانهيار
           sed -i 's/^name:.*/name: store_app/g' pubspec.yaml
           
-          # توليد منصة أندرويد
-          flutter create . --platforms=android --org com.store.app
+          flutter create . --platforms=android --org com.example
           
-          # كتابة ملف build.gradle نظيف ومضبوط بالقيم الثابتة لتجنب أي أخطاء
-          cat << 'EOF' > android/app/build.gradle
-          plugins {
-              id "com.android.application"
-              id "kotlin-android"
-              id "dev.flutter.flutter-gradle-plugin"
-          }
-
-          android {
-              namespace "com.store.app"
-              compileSdkVersion flutter.compileSdkVersion
-              ndkVersion flutter.ndkVersion
-
-              compileOptions {
-                  sourceCompatibility JavaVersion.VERSION_1_8
-                  targetCompatibility JavaVersion.VERSION_1_8
-              }
-
-              kotlinOptions {
-                  jvmTarget = '1.8'
-              }
-
-              defaultConfig {
-                  applicationId "com.store.app"
-                  minSdkVersion 21
-                  targetSdkVersion flutter.targetSdkVersion
-                  versionCode 1
-                  versionName "1.0.0"
-              }
-
-              buildTypes {
-                  release {
-                      signingConfig signingConfigs.debug
-                  }
-              }
-          }
-
-          flutter {
-              source '../..'
-          }
-          EOF
+          # ضبط الـ SDK وضمان مطابقة الـ namespace
+          if [ -f "android/app/build.gradle" ]; then
+            sed -i 's/minSdkVersion.*/minSdkVersion 21/g' android/app/build.gradle || true
+            sed -i 's/namespace .*/namespace "com.example.store_app"/g' android/app/build.gradle || true
+          fi
           
           cd -
           cp -a ../app_build/android ./
