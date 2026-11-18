@@ -3,7 +3,10 @@ import 'package:provider/provider.dart';
 import 'store.dart';
 import 'export.dart';
 
-void main() {
+void main() async {
+  // ضمان تهيئة بيئة فلاتر قبل تشغيل أي تخزين محلي أو خدمات
+  WidgetsFlutterBinding.ensureInitialized();
+  
   runApp(
     MultiProvider(
       providers: [
