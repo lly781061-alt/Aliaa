@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 String formatCurrency(dynamic amount) {
   final formatter = NumberFormat('#,###', 'en_US');
@@ -261,7 +260,6 @@ class StoreData extends ChangeNotifier {
     }
   }
 
-  // حفظ نسخة احتياطية في ذاكرة الهاتف المحلية
   Future<String?> saveLocalBackupFile() async {
     try {
       final dir = await getApplicationDocumentsDirectory();
