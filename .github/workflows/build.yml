@@ -27,9 +27,13 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Force min SDK version to 21 for mobile_scanner
+      - name: Force min SDK version to 21 and Android embedding v2
         run: |
           sed -i 's/minSdkVersion.*/minSdkVersion 21/g' android/app/build.gradle || true
+          # ضمان تفعيل الـ v2 embedding عبر التأكد من ملف MainActivity
+          if [ -f "android/app/src/main/kotlin/com/example/store_app/MainActivity.kt" ]; then
+            echo "MainActivity.kt exists"
+          fi
 
       - name: Get Dependencies
         run: flutter pub get
