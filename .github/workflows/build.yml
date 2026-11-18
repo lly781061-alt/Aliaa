@@ -27,23 +27,26 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Generate Android Platform Safely
+      - name: Generate Android Platform & Fix Properties
         run: |
-          # إنشاء مجلد مؤقت بحروف صغيرة لتجنب مشكلة اسم المستودع (Aliaa)
           mkdir -p ../app_build
           cp -a . ../app_build/
           cd ../app_build
           
-          # تصحيح اسم الحزمة مؤقتاً
+          # تصحيح اسم الحزمة مؤقتًا
           sed -i 's/^name:.*/name: store_app/g' pubspec.yaml
           
-          # توليد منصة أندرويد وضبط الـ SDK
+          # توليد منصة أندرويد
           flutter create . --platforms=android --org com.store.app
+          
+          # إضافة تعريف localProperties وحل مشكلتها في ملف build.gradle وإعداد الـ SDK
           if [ -f "android/app/build.gradle" ]; then
+            if ! grep -q "localProperties = new Properties()" android/app/build.gradle; then
+              sed -i '1i def localProperties = new Properties()\ndef localPropertiesFile = rootProject.file("local.properties")\nif (localPropertiesFile.exists()) {\n    localProperties.load(new FileInputStream(localPropertiesFile))\n}\n' android/app/build.gradle
+            fi
             sed -i 's/minSdkVersion.*/minSdkVersion 21/g' android/app/build.gradle || true
           fi
           
-          # نقل مجلد الأندرويد الناتج إلى المشروع الأصلي
           cd -
           cp -a ../app_build/android ./
 
