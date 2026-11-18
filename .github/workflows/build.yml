@@ -29,10 +29,7 @@ jobs:
 
       - name: Setup Android Platform & Fix SDK
         run: |
-          # إصلاح اسم الحزمة في pubspec.yaml مؤقتاً لتجنب خطأ الحروف الكبيرة
-          sed -i 's/^name:.*/name: store_app/g' pubspec.yaml
-          
-          # توليد منصة أندرويد بشكل نظيف
+          # توليد منصة أندرويد بشكل نظيف وآمن
           flutter create . --platforms=android --org com.store.app
           
           # تعديل الحد الأدنى للـ SDK إلى 21
