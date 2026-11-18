@@ -27,7 +27,7 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Generate Android Platform & Fix Properties
+      - name: Generate Android Platform & Fix Gradle Syntax
         run: |
           mkdir -p ../app_build
           cp -a . ../app_build/
@@ -39,11 +39,11 @@ jobs:
           # توليد منصة أندرويد
           flutter create . --platforms=android --org com.store.app
           
-          # إضافة تعريف localProperties وحل مشكلتها في ملف build.gradle وإعداد الـ SDK
           if [ -f "android/app/build.gradle" ]; then
-            if ! grep -q "localProperties = new Properties()" android/app/build.gradle; then
-              sed -i '1i def localProperties = new Properties()\ndef localPropertiesFile = rootProject.file("local.properties")\nif (localPropertiesFile.exists()) {\n    localProperties.load(new FileInputStream(localPropertiesFile))\n}\n' android/app/build.gradle
-            fi
+            # وضع تعريف localProperties قبل كتلة android { مباشرة للحفاظ على ترتيب plugins { }
+            sed -i '/^android {/i def localProperties = new Properties()\ndef localPropertiesFile = rootProject.file("local.properties")\nif (localPropertiesFile.exists()) {\n    localProperties.load(new FileInputStream(localPropertiesFile))\n}\n' android/app/build.gradle
+            
+            # ضبط الحد الأدنى للـ SDK إلى 21
             sed -i 's/minSdkVersion.*/minSdkVersion 21/g' android/app/build.gradle || true
           fi
           
