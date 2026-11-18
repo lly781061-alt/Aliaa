@@ -107,9 +107,9 @@ class ItemsScreen extends StatelessWidget {
                   margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   child: ListTile(
                     title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('القسم: ${item.section} | الكمية: ${item.quantity}'),
+                    subtitle: Text('القسم: ${item.section} \vert{} الكمية: ${item.quantity}'),
                     trailing: Text(
-                      '${formatCurrency(item.price)} ${store.currencySymbol}',
+                      '${formatCurrency(item.price)}${store.currencySymbol}',
                       style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
                     ),
                     onLongPress: () {
@@ -198,7 +198,7 @@ class DebtsScreen extends StatelessWidget {
                     title: Text(customer.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text('الهاتف: ${customer.phone}'),
                     trailing: Text(
-                      '${formatCurrency(customer.remainingBalance)} ${store.currencySymbol}',
+                      '${formatCurrency(customer.remainingBalance)}${store.currencySymbol}',
                       style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
                     ),
                     onLongPress: () {
@@ -279,117 +279,3 @@ class RentsScreen extends StatelessWidget {
                 return Card(
                   margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   child: ListTile(
-                    title: Text(rent.customerName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('المعدة: ${rent.equipmentName} (${rent.count} قطع)\nالتاريخ: ${rent.date}'),
-                    trailing: IconButton(
-                      icon: Icon(rent.isReturned ? Icons.check_circle : Icons.timer, color: rent.isReturned ? Colors.green : Colors.blue),
-                      onPressed: () {
-                        if (!rent.isReturned) {
-                          store.returnRental(rent.id);
-                        }
-                      },
-                    ),
-                  ),
-                );
-              },
-            ),
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add_business),
-        onPressed: () {
-          _showRentDialog(context);
-        },
-      ),
-    );
-  }
-
-  void _showRentDialog(BuildContext context) {
-    final store = Provider.of<StoreData>(context, listen: false);
-    if (store.equipments.isEmpty) return;
-
-    RentalEquipment selectedEq = store.equipments.first;
-    final customerCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController();
-    final countCtrl = TextEditingController(text: '1');
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('تسجيل إيجار جديد'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<RentalEquipment>(
-                value: selectedEq,
-                items: store.equipments.map((e) => DropdownMenuItem(value: e, child: Text('${e.name} (المتاح: ${e.availableCount})'))).toList(),
-                onChanged: (val) { if (val != null) selectedEq = val; },
-                decoration: const InputDecoration(labelText: 'اختر المعدة'),
-              ),
-              TextField(controller: customerCtrl, decoration: const InputDecoration(labelText: 'اسم المستأجر')),
-              TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقم الهاتف')),
-              TextField(controller: countCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'العدد')),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
-          ElevatedButton(
-            onPressed: () {
-              if (customerCtrl.text.isNotEmpty) {
-                int count = int.tryParse(countCtrl.text) ?? 1;
-                store.addActiveRental(ActiveRental(
-                  id: DateTime.now().millisecondsSinceEqual.toString(),
-                  equipmentName: selectedEq.name,
-                  count: count,
-                  customerName: customerCtrl.text,
-                  phone: phoneCtrl.text,
-                  note: '',
-                  date: DateTime.now().toString().substring(0, 10),
-                  isReturned: false,
-                ));
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('تأكيد الإيجار'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// 4. شاشة الإعدادات
-class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final store = Provider.of<StoreData>(context);
-    final nameCtrl = TextEditingController(text: store.storeName);
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        TextField(
-          controller: nameCtrl,
-          decoration: const InputDecoration(labelText: 'اسم المحل'),
-          onSubmitted: (val) {
-            store.storeName = val;
-            store.saveData();
-          },
-        ),
-        const SizedBox(height: 20),
-        ListTile(
-          title: const Text('تصدير نسخة احتياطية محلية'),
-          trailing: const Icon(Icons.download),
-          onTap: () async {
-            String? path = await store.saveLocalBackupFile();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(path != null ? 'تم الحفظ في: $path' : 'فشل حفظ النسخة')),
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
