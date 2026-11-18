@@ -27,9 +27,17 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Force min SDK version to 21
+      - name: Create Android files if missing & Fix SDK
         run: |
-          sed -i 's/minSdkVersion.*/minSdkVersion 21/g' android/app/build.gradle || true
+          # إذا لم يكن مجلد android موجوداً، قم بإنشائه تلقائياً عبر فلاتر
+          if [ ! -d "android" ]; then
+            flutter create . --platforms=android
+          fi
+          
+          # تحديث الـ minSdkVersion إلى 21
+          if [ -f "android/app/build.gradle" ]; then
+            sed -i 's/minSdkVersion.*/minSdkVersion 21/g' android/app/build.gradle || true
+          fi
 
       - name: Get Dependencies
         run: flutter pub get
