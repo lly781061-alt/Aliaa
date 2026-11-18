@@ -23,6 +23,7 @@ jobs:
         with:
           flutter-version: '3.19.6'
           channel: 'stable'
+          cache: true
 
       - name: Force Recreate Android Platform
         run: |
@@ -33,7 +34,7 @@ jobs:
         run: flutter pub get
 
       - name: Build APK Release
-        run: flutter build apk --release
+        run: flutter build apk --release --target-platform android-arm,android-arm64
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
