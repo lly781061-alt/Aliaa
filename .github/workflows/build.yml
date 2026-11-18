@@ -27,7 +27,7 @@ jobs:
       - name: Force Recreate Android Platform
         run: |
           rm -rf android
-          flutter create . --platforms=android
+          flutter create . --project-name=store_app --platforms=android
 
       - name: Get Dependencies
         run: flutter pub get
