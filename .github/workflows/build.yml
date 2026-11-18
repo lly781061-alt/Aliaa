@@ -27,22 +27,55 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Generate Android & Fix Package Match
+      - name: Generate Android & Overwrite Gradle Cleanly
         run: |
           mkdir -p ../app_build
           cp -a . ../app_build/
           cd ../app_build
           
-          # توحيد اسم الحزمة بدقة لتجنب الانهيار
           sed -i 's/^name:.*/name: store_app/g' pubspec.yaml
-          
           flutter create . --platforms=android --org com.example
           
-          # ضبط الـ SDK وضمان مطابقة الـ namespace
-          if [ -f "android/app/build.gradle" ]; then
-            sed -i 's/minSdkVersion.*/minSdkVersion 21/g' android/app/build.gradle || true
-            sed -i 's/namespace .*/namespace "com.example.store_app"/g' android/app/build.gradle || true
-          fi
+          # كتابة ملف build.gradle بدون أي اعتماد على localProperties لتجنب الخطأ نهائياً
+          cat << 'EOF' > android/app/build.gradle
+          plugins {
+              id "com.android.application"
+              id "kotlin-android"
+              id "dev.flutter.flutter-gradle-plugin"
+          }
+
+          android {
+              namespace "com.example.store_app"
+              compileSdkVersion 34
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_1_8
+                  targetCompatibility JavaVersion.VERSION_1_8
+              }
+
+              kotlinOptions {
+                  jvmTarget = '1.8'
+              }
+
+              defaultConfig {
+                  applicationId "com.example.store_app"
+                  minSdkVersion 21
+                  targetSdkVersion 34
+                  versionCode 1
+                  versionName "1.0.0"
+              }
+
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.debug
+                  }
+              }
+          }
+
+          flutter {
+              source '../..'
+          }
+          EOF
           
           cd -
           cp -a ../app_build/android ./
