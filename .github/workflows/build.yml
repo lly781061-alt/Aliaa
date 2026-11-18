@@ -27,14 +27,12 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Create Android files if missing & Fix SDK
+      - name: Generate Android Platform Structure & Fix SDK
         run: |
-          # إذا لم يكن مجلد android موجوداً، قم بإنشائه تلقائياً عبر فلاتر
-          if [ ! -d "android" ]; then
-            flutter create . --platforms=android
-          fi
+          # توليد ملفات منصة أندرويد تلقائياً إذا كانت مفقودة في المستودع
+          flutter create . --platforms=android --org com.store.app
           
-          # تحديث الـ minSdkVersion إلى 21
+          # ضبط الحد الأدنى للـ SDK إلى 21 لضمان توافق الحزم الحديثة
           if [ -f "android/app/build.gradle" ]; then
             sed -i 's/minSdkVersion.*/minSdkVersion 21/g' android/app/build.gradle || true
           fi
