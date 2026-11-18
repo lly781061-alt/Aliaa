@@ -77,12 +77,6 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('محل السنبلة للكهربائيات والإنشائيات', style: TextStyle(color: Colors.white, fontSize: 18)),
         backgroundColor: const Color(0xFF0B2A4A),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings, color: Color(0xFFF2B21B)),
-            onPressed: () {},
-          )
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -108,7 +102,7 @@ class HomeScreen extends StatelessWidget {
           GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics,
+            physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
             childAspectRatio: 1.5,
@@ -171,135 +165,4 @@ class PosScreen extends StatelessWidget {
             Expanded(
               child: ListView(
                 children: const [
-                  Card(child: ListTile(title: Text('واير تسليك 2.5 مم - سعودي'), subtitle: Text('السعر: 45,000 د.ع'), trailing: Icon(Icons.add_shopping_cart, color: Color(0xFFF26522)))),
-                  Card(child: ListTile(title: Text('قاطع أوتوماتيك 32A'), subtitle: Text('السعر: 12,000 د.ع'), trailing: Icon(Icons.add_shopping_cart, color: Color(0xFFF26522)))),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('المجموع: 57,000 د.ع', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF26522), foregroundColor: Colors.white),
-                    onPressed: () {},
-                    icon: const Icon(Icons.print),
-                    label: const Text('إتمام وطباعة فاتورة'),
-                  ),
-                ],
-              ),
-            )
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// 3. شاشة المخزن
-class InventoryScreen extends StatelessWidget {
-  const InventoryScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('إدارة المخزن والأقسام', style: TextStyle(color: Colors.white)), backgroundColor: const Color(0xFF0B2A4A)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: const [
-          ListTile(title: Text('قسم الأساسيات والأسلاك'), subtitle: Text('عدد الأصناف: 24'), leading: Icon(Icons.electrical_services, color: Color(0xFFF2B21B))),
-          Divider(),
-          ListTile(title: Text('قسم القواطع واللوحات'), subtitle: Text('عدد الأصناف: 15'), leading: Icon(Icons.bolt, color: Color(0xFFF26522))),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF0B2A4A),
-        onPressed: () {},
-        child: const Icon(Icons.add, color: Color(0xFFF2B21B)),
-      ),
-    );
-  }
-}
-
-// 4. شاشة الديون
-class DebtsScreen extends StatelessWidget {
-  const DebtsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('دفتر الديون والزبائن', style: TextStyle(color: Colors.white)), backgroundColor: const Color(0xFF0B2A4A)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: const [
-          Card(
-            child: ListTile(
-              title: Text('حيدر الكرخي'),
-              subtitle: Text('المبلغ الذمي: 150,000 د.ع\nالتاريخ: 2026/11/15'),
-              isThreeLine: true,
-              trailing: Text('مطلوب', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// 5. شاشة الإيجارات
-class RentalsScreen extends StatelessWidget {
-  const RentalsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('إيجارات المعدات الإنشائية', style: TextStyle(color: Colors.white)), backgroundColor: const Color(0xFF0B2A4A)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: const [
-          Card(
-            child: ListTile(
-              title: Text('هيلتي حفر كبير (Makita)'),
-              subtitle: Text('المستأجر: أبو كرار | الأجر اليومي: 15,000 د.ع'),
-              trailing: Chip(label: Text('مؤجر حالياً', style: TextStyle(color: Colors.white)), backgroundColor: Color(0xFFF26522)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// 6. شاشة التقارير
-class ReportsScreen extends StatelessWidget {
-  const ReportsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('التقارير المالية والأرباح', style: TextStyle(color: Colors.white)), backgroundColor: const Color(0xFF0B2A4A)),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: const [
-                    Text('صافي أرباح هذا الشهر', style: TextStyle(color: Colors.grey)),
-                    SizedBox(height: 10),
-                    Text('2,400,000 د.ع', style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.green)),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+                  Card(child: ListTile(title: Text('واير تسليك 2.5 مم - سعودي'), subtitle: Text('السعر: 45,000 د.ع'), trailing: Icon(Icons.add_shopping_
