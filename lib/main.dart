@@ -19,19 +19,12 @@ class SunbulaApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0B2A4A)),
         useMaterial3: true,
-      ),
-      home: const SunbulaWebViewPage(),
-    );
-  }
-}
-
+      home: const SunbulaWebViewPage
 class SunbulaWebViewPage extends StatefulWidget {
   const SunbulaWebViewPage({super.key});
 
   @override
   State<SunbulaWebViewPage> createState() => _SunbulaWebViewPageState();
-}
-
 class _SunbulaWebViewPageState extends State<SunbulaWebViewPage> {
   late final WebViewController _controller;
   bool _isLoading = true;
@@ -49,21 +42,13 @@ class _SunbulaWebViewPageState extends State<SunbulaWebViewPage> {
             if (mounted) {
               setState(() {
                 _isLoading = false;
-              });
-            }
-          },
+      
           onWebResourceError: (error) {
             if (mounted) {
               setState(() {
                 _isLoading = false;
                 _errorMessage = error.description;
-              });
-            }
-          },
-        ),
-      );
     _loadLocalSunbulaHtml();
-  }
 
   Future<void> _loadLocalSunbulaHtml() async {
     try {
@@ -71,23 +56,18 @@ class _SunbulaWebViewPageState extends State<SunbulaWebViewPage> {
       final uri = Uri.dataFromString(
         htmlContent,
         mimeType: 'text/html',
-        encoding: utf8,
-      );
+        encoding: utf8
       await _controller.loadRequest(uri);
-    } catch (e) {
+    catch (e) {
       if (mounted) {
         setState(() {
           _isLoading = false;
           _errorMessage = 'تعذر تحميل sunbula.html: $e';
-        });
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
+   canPop: false,
       onPopInvoked: (didPop) async {
         if (didPop) return;
         if (await _controller.canGoBack()) {
@@ -106,19 +86,9 @@ class _SunbulaWebViewPageState extends State<SunbulaWebViewPage> {
                     child: Text(
                       _errorMessage!,
                       textAlign: TextAlign.center,
-                    ),
-                  ),
-                )
               else
                 WebViewWidget(controller: _controller),
               if (_isLoading)
                 const Center(
                   child: CircularProgressIndicator(),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
+       
